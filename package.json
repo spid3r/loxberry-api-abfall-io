@@ -1,6 +1,6 @@
 {
   "name": "loxberry-api-abfall-io",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "type": "module",
   "description": "LoxBerry 3 plugin for waste collection schedules via api.abfall.io",
   "private": true,
