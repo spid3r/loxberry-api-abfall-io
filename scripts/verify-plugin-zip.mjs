@@ -29,17 +29,35 @@ if (!fs.existsSync(zipPath)) {
   process.exit(1);
 }
 
-const list = (() => {
-  const a = spawnSync("tar", ["-tf", zipPath], { encoding: "utf-8" });
-  if (a.status !== 0) {
-    console.error("Could not list ZIP (is `tar` available?)", a.stderr);
+function listZipEntries(archivePath) {
+  /** Info-ZIP on Linux/macOS CI understands Node/archiver zips; GNU tar often does not. */
+  const fromStdout = (stdout) =>
+    stdout
+      .split(/\r?\n/)
+      .map((s) => s.trim())
+      .filter(Boolean);
+  const tryUnzipZ1 = () =>
+    spawnSync("unzip", ["-Z1", archivePath], { encoding: "utf-8" });
+  const tryTarTf = () =>
+    spawnSync("tar", ["-tf", archivePath], { encoding: "utf-8" });
+  // Windows: prefer built-in tar; other platforms: unzip -Z1 first
+  if (process.platform === "win32") {
+    const t = tryTarTf();
+    if (t.status === 0) return fromStdout(t.stdout);
+    const u = tryUnzipZ1();
+    if (u.status === 0) return fromStdout(u.stdout);
+    console.error("Could not list ZIP (tried `tar -tf`, `unzip -Z1`)", t.stderr, u.stderr);
     process.exit(1);
   }
-  return a.stdout
-    .split(/\r?\n/)
-    .map((s) => s.trim())
-    .filter(Boolean);
-})();
+  const u = tryUnzipZ1();
+  if (u.status === 0) return fromStdout(u.stdout);
+  const t = tryTarTf();
+  if (t.status === 0) return fromStdout(t.stdout);
+  console.error("Could not list ZIP (tried `unzip -Z1`, `tar -tf`)", u.stderr, t.stderr);
+  process.exit(1);
+}
+
+const list = listZipEntries(zipPath);
 
 const forbidden = [
   /(^|\/)node_modules\//i,
