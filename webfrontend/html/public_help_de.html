@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Abfallabholung – api.abfall.io</title>
+    <style>
+        body { font-family: system-ui, sans-serif; max-width: 38rem; margin: 2rem auto; padding: 0 1rem; line-height: 1.55; color: #222; }
+        h1 { font-size: 1.3rem; color: #1b5e20; }
+        code { background: #f0f0f0; padding: 0.1em 0.35em; border-radius: 4px; }
+        a { color: #2e7d32; }
+        ul { margin: 0.6em 0; padding-left: 1.2rem; }
+    </style>
+</head>
+<body>
+    <h1>Abfallabholung (api.abfall.io)</h1>
+    <p>Die Einstellungen passen Sie in der LoxBerry-Verwaltung an (Standort, Abruf, optional MQTT und Loxone-Links). Diese Seite liefert dieselben Abholtermine per HTTP.</p>
+    <p><strong>Typische Wege</strong> (im Plugin genauer erklärt):</p>
+    <ul>
+        <li><strong>Loxone</strong> — loxone.php-Links im <em>virtuellen HTTP-Eingang</em>: Ihr Miniserver holt in einem festen Rhythmus eine Zahl (Tage bis zur Leerung) pro Tonne, ideal, wenn alles in Loxone laufen soll.</li>
+        <li><strong>MQTT</strong> — nach jedem Plugin-Abruf werden die Werte an einen Broker gesendet, mehrere Ziele (App, Heim-Automation) können zugreifen, ohne loxone.php einzurichten.</li>
+        <li><strong>JSON</strong> — dieselben Daten in einem Rutsch: an die Seitenadresse <code>?format=json</code> anhängen (nach dem ersten erfolgreichen Abruf im Plugin).</li>
+    </ul>
+    <p><a href="/admin/plugins/{{PLUGIN_FOLDER}}/index.php">Zum Plugin (Admin)</a></p>
+    <p><a href="?view=html&amp;lang=de">Deutsch</a> · <a href="?view=html&amp;lang=en">English</a></p>
+</body>
+</html>

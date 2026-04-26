@@ -1,0 +1,4 @@
+{
+  "//": "Forces Playwright + Node 22 to treat the destructive E2E test files as ES modules. Do not move this file - it scopes ESM mode to test-e2e/ only and keeps the rest of the repo on CommonJS.",
+  "type": "module"
+}

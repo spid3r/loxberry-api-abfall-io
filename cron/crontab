@@ -1,0 +1,3 @@
+# Waste Collection - check hourly; fetch.js itself respects the configured
+# fetch interval and the fuzz factor (random offset) defined in plugin settings.
+17 * * * * loxberry LBHOMEDIR=REPLACELBPHOMEDIR LBPPLUGINDIR=REPLACELBPPLUGINDIR /usr/bin/node REPLACELBPHOMEDIR/bin/plugins/REPLACELBPPLUGINDIR/fetch.cjs >> REPLACELBPLOGDIR/abfall.log 2>&1

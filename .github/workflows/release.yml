@@ -1,0 +1,47 @@
+# Runs semantic-release: version bump, CHANGELOG, Git tag, GitHub Release + ZIP asset.
+# No PAT required: the default GITHUB_TOKEN has enough scope when job permissions
+# are set to contents: write (see below). Do not set a restrictive workflow-level
+# "permissions: contents: read" — it can block release creation.
+name: Release
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+    # Optional: only one release job at a time (two pushes in quick succession)
+    concurrency:
+      group: semantic-release
+      cancel-in-progress: false
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+        env:
+          HUSKY: "0"
+
+      - name: Typecheck and unit tests (no LoxBerry)
+        run: npm run typecheck && npm test
+
+      - name: Semantic release (build + ZIP in prepare; Git tags + GitHub Release; no npm publish)
+        run: npx semantic-release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,0 +1,3 @@
+#!/usr/bin/env sh
+# Enforce conventional commits (semantic-release). Skipped when HUSKY=0 (e.g. CI).
+npx --no -- commitlint --edit "$1"

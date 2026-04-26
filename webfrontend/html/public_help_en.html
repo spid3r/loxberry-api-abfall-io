@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Waste collection – api.abfall.io</title>
+    <style>
+        body { font-family: system-ui, sans-serif; max-width: 38rem; margin: 2rem auto; padding: 0 1rem; line-height: 1.55; color: #222; }
+        h1 { font-size: 1.3rem; color: #1b5e20; }
+        code { background: #f0f0f0; padding: 0.1em 0.35em; border-radius: 4px; }
+        a { color: #2e7d32; }
+        ul { margin: 0.6em 0; padding-left: 1.2rem; }
+    </style>
+</head>
+<body>
+    <h1>Waste collection (api.abfall.io)</h1>
+    <p>Configure the plugin in LoxBerry admin (location, fetch, optional MQTT and Loxone links). This public URL serves the same collection data over HTTP.</p>
+    <p><strong>Typical use</strong> (the plugin has more detail in Settings):</p>
+    <ul>
+        <li><strong>Loxone</strong> — use the loxone.php links in a <em>Virtual HTTP Input</em>: the Miniserver polls and gets a number of days per waste type; best for pure Loxone workflows.</li>
+        <li><strong>MQTT</strong> — after each fetch, values are published to topics so several systems can subscribe without each setting up loxone.php.</li>
+        <li><strong>JSON</strong> — add <code>?format=json</code> to this page for a full snapshot (after at least one successful fetch in the plugin).</li>
+    </ul>
+    <p><a href="/admin/plugins/{{PLUGIN_FOLDER}}/index.php">Open plugin admin</a></p>
+    <p><a href="?view=html&amp;lang=de">Deutsch</a> · <a href="?view=html&amp;lang=en">English</a></p>
+</body>
+</html>

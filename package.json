@@ -1,0 +1,82 @@
+{
+  "name": "loxberry-api-abfall-io",
+  "version": "0.0.0",
+  "type": "module",
+  "description": "LoxBerry 3 plugin for waste collection schedules via api.abfall.io",
+  "private": true,
+  "main": "dist-node/cli/abfall_api.cjs",
+  "scripts": {
+    "prepare": "husky",
+    "build": "node ./scripts/build-bundle.mjs && node ./scripts/mirror-bin-dist.mjs",
+    "build:icons": "node ./scripts/resize-plugin-icons.mjs",
+    "build:tsc": "npm run typecheck",
+    "clean": "node -e \"import('node:fs').then(m=>{m.rmSync('dist-node',{recursive:true,force:true});m.rmSync('bin/dist-node',{recursive:true,force:true});})\"",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p test-e2e/tsconfig.json --noEmit",
+    "test": "npx tsx node_modules/mocha/bin/mocha.js \"test-ts/**/*.spec.ts\"",
+    "test:watch": "npx tsx node_modules/mocha/bin/mocha.js \"test-ts/**/*.spec.ts\" --watch",
+    "coverage": "c8 npm test",
+    "release:zip": "npm run build:icons && npm run build && node ./scripts/build-release.mjs",
+    "verify:zip": "node ./scripts/verify-plugin-zip.mjs",
+    "verify": "npm run typecheck && npm test && npm run release:zip && npm run verify:zip",
+    "test:playwright": "npx playwright test test-e2e",
+    "test:all": "npm run verify && npm run test:playwright",
+    "dev:ui": "node ./scripts/dev-ui-server.mjs",
+    "dev:ui:mock": "node ./scripts/dev-ui-server.mjs --mock",
+    "lb:cli": "dotenv -e .env -- npx loxberry-client",
+    "plugins:list": "npm run lb:cli -- plugins list",
+    "plugins:deploy": "dotenv -e .env -- npx loxberry-client plugins deploy --project .",
+    "plugins:upload:latest": "npm run plugins:deploy",
+    "plugins:uninstall": "dotenv -e .env -- npx loxberry-client plugins uninstall --name wasteapiio",
+    "test:live": "npm run release:zip && npm run plugins:upload:latest",
+    "test:live:full": "npm run test:live && npm run plugins:uninstall",
+    "test:live:street": "dotenv -e .env -- npx tsx node_modules/mocha/bin/mocha.js \"test-ts/live/**/*.spec.ts\"",
+    "test:e2e:full": "dotenv -e .env -- node ./scripts/run-e2e-full.mjs",
+    "test:e2e:full:go": "dotenv -e .env -- node ./scripts/run-e2e-full.mjs --yes-i-am-developer",
+    "e2e:appliance:go": "npm run test:e2e:full:go",
+    "use:local-client-library": "npm install ../loxberry-client-library",
+    "link:client-lib": "node ./scripts/link-client-lib.mjs",
+    "release:dry-run": "semantic-release --dry-run"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/spid3r/loxberry-api-abfall-io.git"
+  },
+  "author": "Thorsten Wolf",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/spid3r/loxberry-api-abfall-io/issues"
+  },
+  "homepage": "https://github.com/spid3r/loxberry-api-abfall-io#readme",
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^20.5.2",
+    "@commitlint/config-conventional": "^20.5.0",
+    "@playwright/test": "^1.59.1",
+    "@semantic-release/changelog": "^6.0.3",
+    "@semantic-release/commit-analyzer": "^13.0.1",
+    "@semantic-release/exec": "^7.1.0",
+    "@semantic-release/git": "^10.0.1",
+    "@semantic-release/github": "^12.0.6",
+    "@semantic-release/release-notes-generator": "^14.1.0",
+    "@types/chai": "^5.2.3",
+    "@types/mocha": "^10.0.10",
+    "@types/node": "^24.12.2",
+    "archiver": "^7.0.1",
+    "c8": "^11.0.0",
+    "chai": "^6.2.0",
+    "dotenv-cli": "^11.0.0",
+    "esbuild": "^0.28.0",
+    "husky": "^9.1.7",
+    "loxberry-client-library": "^1.1.0",
+    "mocha": "^11.7.5",
+    "semantic-release": "^25.0.3",
+    "sharp": "^0.34.5",
+    "tsx": "^4.21.0",
+    "typescript": "^6.0.3"
+  },
+  "dependencies": {
+    "mqtt": "^5.15.1"
+  }
+}

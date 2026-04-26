@@ -1,0 +1,24 @@
+{
+  "service_key": "",
+  "language": "",
+  "location": {
+    "f_id_kommune": "",
+    "f_id_strasse": "",
+    "street_name": "",
+    "f_id_strasse_hnr": "",
+    "hnr_name": ""
+  },
+  "fetch_interval_hours": 6,
+  "fetch_fuzz_minutes": 30,
+  "categories_filter": [],
+  "mqtt": {
+    "enabled": false,
+    "use_loxberry_broker": true,
+    "host": "",
+    "port": 1883,
+    "user": "",
+    "password": "",
+    "topic_prefix": "loxberry/wasteapiio",
+    "retain": true
+  }
+}

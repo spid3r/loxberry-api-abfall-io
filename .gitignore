@@ -1,0 +1,33 @@
+# --- secrets / local env ---
+.env
+.env.*
+!.env.example
+
+# --- runtime data (LoxBerry plugin local state) ---
+data/credentials.json
+data/abfall_data.json
+data/abfall.log
+
+# --- build / dependency output ---
+dist/
+dist-node/
+bin/dist-node/
+node_modules/
+coverage/
+.nyc_output/
+
+# --- python legacy leftovers ---
+__pycache__/
+*.pyc
+
+# --- ad-hoc fixtures from earlier prototyping ---
+complete.csv
+test.csv
+
+# --- tooling caches / scratch ---
+.playwright-mcp/
+playwright-report/
+test-results/
+.vscode/
+.idea/
+*.log

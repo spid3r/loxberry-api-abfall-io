@@ -1,0 +1,70 @@
+# Local library/Node quality gate only. No LoxBerry appliance, no live Playwright
+# (those run on your network with a real device). No repository secrets required.
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test-and-build:
+    runs-on: ubuntu-latest
+    # Pull requests from forks: no custom secrets; same as below.
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+        env:
+          HUSKY: "0"
+
+      - name: Commitlint (conventional commits, semantic-release)
+        if: github.event_name == 'push'
+        run: |
+          if [ "${{ github.event.before }}" = "0000000000000000000000000000000000000000" ]; then
+            npx commitlint --last --verbose
+          else
+            npx commitlint --from=${{ github.event.before }} --to=${{ github.event.after }} --verbose
+          fi
+
+      - name: Commitlint (PR range)
+        if: github.event_name == 'pull_request'
+        run: npx commitlint --from=${{ github.event.pull_request.base.sha }} --to=${{ github.event.pull_request.head.sha }} --verbose
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Run tests (Mocha; excludes destructive Playwright E2E)
+        run: npm test
+
+      - name: Build runtime
+        run: npm run build
+
+      - name: Build release zip (LoxBerry plugin)
+        run: npm run release:zip
+
+      - name: Verify ZIP contents (no dev junk, required paths)
+        run: npm run verify:zip
+
+      - name: Install Playwright Chromium (for test-e2e load/skip)
+        run: npx playwright install --with-deps chromium
+
+      - name: Playwright (specs load; live E2E skipped without E2E_LIVE)
+        run: npm run test:playwright
