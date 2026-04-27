@@ -1,3 +1,10 @@
+## [1.0.2](https://github.com/spid3r/loxberry-api-abfall-io/compare/v1.0.1...v1.0.2) (2026-04-27)
+
+
+### Bug Fixes
+
+* add postroot and patch cron functionality ([fb1648e](https://github.com/spid3r/loxberry-api-abfall-io/commit/fb1648e3c71160031e99be51ae5f8a1ee5931a5c))
+
 ## [1.0.1](https://github.com/spid3r/loxberry-api-abfall-io/compare/v1.0.0...v1.0.1) (2026-04-26)
 
 
