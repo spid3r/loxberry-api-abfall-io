@@ -1,3 +1,10 @@
+# [1.1.0](https://github.com/spid3r/loxberry-api-abfall-io/compare/v1.0.2...v1.1.0) (2026-04-27)
+
+
+### Features
+
+* migrate plugin to abfall.io naming and service map ([499b7d5](https://github.com/spid3r/loxberry-api-abfall-io/commit/499b7d543f08f5dcc2b7e00a3860e57b5b9c0b1f))
+
 ## [1.0.2](https://github.com/spid3r/loxberry-api-abfall-io/compare/v1.0.1...v1.0.2) (2026-04-27)
 
 
