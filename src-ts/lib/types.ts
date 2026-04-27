@@ -69,6 +69,16 @@ export interface ApiStatus {
   cached_data: Partial<WasteData> | Record<string, never>;
   api_mode: string;
   mqtt: MqttPublishStatus;
+  /**
+   * LoxBerry merged cron at `system/cron/cron.d/<FOLDER>` (see plugin `FOLDER` in `plugin.cfg`).
+   * Omitted in dev or when $LBHOMEDIR / plugin id cannot be inferred.
+   */
+  install_cron?: {
+    merged_cron_path: string;
+    file_exists: boolean;
+    /** True = unexpanded `REPLACELB*` in file (node would log MODULE_NOT_FOUND). */
+    replacelb_placeholder_found: boolean;
+  } | null;
 }
 
 export interface SearchItem {

@@ -36,7 +36,8 @@ function inferLoxBerryPluginDir(lbhomedir: string): string {
   return "";
 }
 
-export function resolvePaths(): ResolvedPaths {
+/** Resolved LBHOMEDIR + plugin folder; same rules as {@link resolvePaths}. */
+export function getLoxBerryHomeAndPlugin(): { lbhomedir: string; lbpplugindir: string } {
   let lbhomedir = process.env.LBHOMEDIR ?? "";
   let lbpplugindir = process.env.LBPPLUGINDIR ?? "";
 
@@ -47,6 +48,46 @@ export function resolvePaths(): ResolvedPaths {
   if (!lbpplugindir && lbhomedir) {
     lbpplugindir = inferLoxBerryPluginDir(lbhomedir);
   }
+  return { lbhomedir, lbpplugindir };
+}
+
+/**
+ * If running inside a LoxBerry plugin (known home + plugin id), read the
+ * system-merged cron file and report whether LoxBerry left `REPLACELB*` in it.
+ * Used by `getStatus()` and by E2E on the live appliance.
+ */
+export function readMergedCronInstallProbe():
+  | {
+      merged_cron_path: string;
+      file_exists: boolean;
+      replacelb_placeholder_found: boolean;
+    }
+  | null {
+  const { lbhomedir, lbpplugindir } = getLoxBerryHomeAndPlugin();
+  if (!lbhomedir || !lbpplugindir) {
+    return null;
+  }
+  /** LoxBerry copies `cron/crontab` to `system/cron/cron.d/<$pname>` (plugin folder), not `loxberry-plugin-*`. */
+  const merged = path.join(
+    lbhomedir,
+    "system",
+    "cron",
+    "cron.d",
+    lbpplugindir,
+  );
+  if (!fs.existsSync(merged)) {
+    return { merged_cron_path: merged, file_exists: false, replacelb_placeholder_found: false };
+  }
+  const text = fs.readFileSync(merged, "utf-8");
+  return {
+    merged_cron_path: merged,
+    file_exists: true,
+    replacelb_placeholder_found: text.includes("REPLACELB"),
+  };
+}
+
+export function resolvePaths(): ResolvedPaths {
+  const { lbhomedir, lbpplugindir } = getLoxBerryHomeAndPlugin();
 
   let configDir: string;
   let dataDir: string;

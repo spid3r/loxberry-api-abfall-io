@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import { log } from "./logger.js";
 import { publishWasteData } from "./mqtt-publisher.js";
-import { resolvePaths } from "./paths.js";
+import { readMergedCronInstallProbe, resolvePaths } from "./paths.js";
 import type { ApiStatus, MqttPublishStatus, PluginConfig, SearchItem, WasteData, WasteEntry } from "./types.js";
 
 const DEFAULT_FETCH_INTERVAL_HOURS = 6;
@@ -382,6 +382,7 @@ export function getStatus(): ApiStatus {
     /** Single upstream; value is for display. Schedules are fetched as an ICS calendar in the background. */
     api_mode: "api.abfall.io",
     mqtt: mqttStatus,
+    install_cron: readMergedCronInstallProbe(),
   };
 }
 

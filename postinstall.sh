@@ -1,16 +1,22 @@
 #!/bin/bash
 
 ARGV0=$0
-ARGV1=$1 # tempfolder
-ARGV2=$2 # pluginname
+ARGV1=$1 # temp file (LoxBerry $1)
+ARGV2=$2 # PLUGIN.NAME / $pname
+ARGV3=$3 # PLUGIN.FOLDER / $pfolder (install dir under bin/plugins, data/plugins, …)
+PFOLDER="${ARGV3:-$ARGV2}"
 
 echo "<INFO> Setting permissions for scripts..."
-chmod +x $LBHOMEDIR/bin/plugins/$ARGV2/fetch.cjs 2>/dev/null
-chmod +x $LBHOMEDIR/bin/plugins/$ARGV2/abfall_api.cjs 2>/dev/null
+chmod +x "$LBHOMEDIR/bin/plugins/$PFOLDER/fetch.cjs" 2>/dev/null
+chmod +x "$LBHOMEDIR/bin/plugins/$PFOLDER/abfall_api.cjs" 2>/dev/null
+chmod +x "$LBHOMEDIR/bin/plugins/$PFOLDER/patch_cron_loxberry.sh" 2>/dev/null || true
+
+# REPLACELB* cron fix runs in postroot.sh (root); postinstall runs as user loxberry
+# and cannot overwrite root-owned files in system/cron/cron.d/.
 
 echo "<INFO> Creating symlink for public data endpoint..."
-DATADIR=$LBHOMEDIR/data/plugins/$ARGV2
-HTMLDIR=$LBHOMEDIR/webfrontend/html/plugins/$ARGV2
+DATADIR=$LBHOMEDIR/data/plugins/$PFOLDER
+HTMLDIR=$LBHOMEDIR/webfrontend/html/plugins/$PFOLDER
 if [ ! -f "$DATADIR/abfall_data.json" ]; then
     echo '{}' > "$DATADIR/abfall_data.json"
 fi

@@ -91,6 +91,8 @@ const mustHave = [
   "plugin.cfg",
   "preinstall.sh",
   "postinstall.sh",
+  "postroot.sh",
+  "bin/patch_cron_loxberry.sh",
   "bin/abfall_api.cjs",
   "bin/fetch.cjs",
   "webfrontend/htmlauth/index.php",

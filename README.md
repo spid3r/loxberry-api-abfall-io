@@ -439,7 +439,7 @@ npm run release:dry-run
 
 - LoxBerry-native plugin layout: `plugin.cfg`, `webfrontend/`, `config/`,
   `data/`, `cron/`, install hooks (`preinstall.sh` / `postinstall.sh` /
-  `preuninstall.sh` / `postuninstall.sh`).
+  `postroot.sh` / `preuninstall.sh` / `postuninstall.sh`).
 - No mandatory Express Server plugin dependency.
 - Live automation lives in root scripts and is excluded from the release ZIP.
 - Follows LoxBerry developer guidance:

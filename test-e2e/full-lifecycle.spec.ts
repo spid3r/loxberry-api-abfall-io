@@ -302,7 +302,7 @@ test.describe("@e2e wasteapiio full plugin lifecycle (destructive)", () => {
     const ajaxStatusUrl = `/admin/plugins/${PLUGIN_FOLDER}/ajax.php?action=status`;
     const ajaxLogUrl = `/admin/plugins/${PLUGIN_FOLDER}/ajax.php?action=log`;
 
-    await test.step("ajax: status JSON (incl. mqtt block)", async () => {
+    await test.step("ajax: status JSON (incl. mqtt + merged cron install probe)", async () => {
       const st = await request.get(ajaxStatusUrl, { timeout: 30_000 });
       expect(st.status(), "ajax status should return 200").toBe(200);
       const body = (await st.text()).trim();
@@ -310,6 +310,11 @@ test.describe("@e2e wasteapiio full plugin lifecycle (destructive)", () => {
         error?: string;
         termine_count?: number;
         mqtt?: { ok?: boolean; last?: string };
+        install_cron?: {
+          merged_cron_path: string;
+          file_exists: boolean;
+          replacelb_placeholder_found: boolean;
+        } | null;
       };
       expect(data.error, body.slice(0, 300)).toBeUndefined();
       expect(
@@ -317,6 +322,16 @@ test.describe("@e2e wasteapiio full plugin lifecycle (destructive)", () => {
         "status.termine_count should be > 0 after fetch",
       ).toBe(true);
       expect(data.mqtt, "status should include mqtt object").toBeDefined();
+      if (data.install_cron) {
+        expect(
+          data.install_cron.file_exists,
+          `merged LoxBerry cron file should exist at ${data.install_cron.merged_cron_path}`,
+        ).toBe(true);
+        expect(
+          data.install_cron.replacelb_placeholder_found,
+          `REPLACELB* must be expanded in merged cron (path ${data.install_cron.merged_cron_path})`,
+        ).toBe(false);
+      }
     });
 
     await test.step("settings: default interval, save fuzz, mqtt toggle", async () => {
