@@ -1,3 +1,10 @@
+## [1.0.1](https://github.com/spid3r/loxberry-api-abfall-io/compare/v1.0.0...v1.0.1) (2026-04-26)
+
+
+### Bug Fixes
+
+* **deps:** bump up versions ([58ee5fc](https://github.com/spid3r/loxberry-api-abfall-io/commit/58ee5fcf5e6650e34c0a555286606e30225edbbf))
+
 # 1.0.0 (2026-04-26)
 
 
