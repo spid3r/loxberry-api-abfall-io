@@ -11,7 +11,7 @@ export interface ResolvedBroker {
   source: string;
 }
 
-const DEFAULT_PREFIX = "loxberry/wasteapiio";
+const DEFAULT_PREFIX = "loxberry/abfallio";
 
 function nowTs(): string {
   const d = new Date();
@@ -229,7 +229,7 @@ export async function publishWasteData(
   const prefix = config.topic_prefix?.trim() || DEFAULT_PREFIX;
   const messages = buildPublishMessages(prefix, data);
 
-  const clientId = `wasteapiio_${Math.random().toString(16).slice(2, 10)}`;
+  const clientId = `abfallio_${Math.random().toString(16).slice(2, 10)}`;
   const connect = options.connect ?? defaultConnect;
   const broker = `mqtt://${host}:${port}`;
   let client: MqttClientLike | null = null;

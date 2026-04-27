@@ -34,9 +34,9 @@ $config_file = $plugin_config_dir . '/abfall.json';
 $config = file_exists($config_file) ? (json_decode(file_get_contents($config_file), true) ?: []) : [];
 $location = $config['location'] ?? [];
 
-WasteapiioI18N::bootstrap($plugin_lang_dir, (string) ($config['language'] ?? ''));
-$activeLang = WasteapiioI18N::lang();
-$availableLangs = WasteapiioI18N::availableLanguages();
+AbfallioI18N::bootstrap($plugin_lang_dir, (string) ($config['language'] ?? ''));
+$activeLang = AbfallioI18N::lang();
+$availableLangs = AbfallioI18N::availableLanguages();
 
 $tab = $_GET['tab'] ?? 'status';
 $allowedTabs = ['status', 'location', 'settings', 'log'];
@@ -48,7 +48,7 @@ if (!in_array($tab, $allowedTabs, true)) {
  * Build query string for in-plugin navigation (language + tab).
  * Full page load ensures the active tab matches ?tab= even inside LBWeb.
  */
-function wasteapiio_tab_href(string $t, string $activeLang): string
+function abfallio_tab_href(string $t, string $activeLang): string
 {
     return 'index.php?' . http_build_query(['lang' => $activeLang, 'tab' => $t], '', '&', PHP_QUERY_RFC3986);
 }
@@ -60,14 +60,48 @@ $mqttHost = (string) ($mqtt['host'] ?? '');
 $mqttPort = (int) ($mqtt['port'] ?? 1883);
 $mqttUser = (string) ($mqtt['user'] ?? '');
 $mqttPassword = (string) ($mqtt['password'] ?? '');
-$mqttTopic = (string) ($mqtt['topic_prefix'] ?? 'loxberry/wasteapiio');
+$mqttTopic = (string) ($mqtt['topic_prefix'] ?? 'loxberry/abfallio');
 $mqttRetain = (bool) ($mqtt['retain'] ?? true);
 
-$fetchInterval = (int) ($config['fetch_interval_hours'] ?? 6);
+$serviceKey = (string) ($config['service_key'] ?? '');
+$abfallioMapBundled = dirname(dirname(__DIR__)) . '/data/abfallio-service-map.json';
+$abfallioMapUser = $plugin_data_dir . '/abfallio-service-map.json';
+$abfallioServiceMapPath = is_file($abfallioMapUser) ? $abfallioMapUser : $abfallioMapBundled;
+$abfallioServiceMap = [];
+$abfallioServiceMapListSource = 'none';
+if (is_file($abfallioServiceMapPath)) {
+    $abfallioServiceMap = json_decode((string) file_get_contents($abfallioServiceMapPath), true) ?: [];
+    $abfallioServiceMapListSource = is_file($abfallioMapUser) ? 'user' : 'bundled';
+}
+$abfallioServiceMapDisplay = $abfallioServiceMap;
+usort(
+    $abfallioServiceMapDisplay,
+    static function ($a, $b): int {
+        return strcasecmp(
+            (string) (($a && is_array($a)) ? ($a['title'] ?? '') : ''),
+            (string) (($b && is_array($b)) ? ($b['title'] ?? '') : ''),
+        );
+    }
+);
+$abfallioServiceMapCount = is_array($abfallioServiceMap) ? count($abfallioServiceMap) : 0;
+$serviceRegionDisplay = '';
+if ($serviceKey !== '') {
+    $lookup = strtolower($serviceKey);
+    foreach ($abfallioServiceMap as $row) {
+        if (strtolower((string) ($row['service_id'] ?? '')) === $lookup) {
+            $serviceRegionDisplay = (string) ($row['title'] ?? '');
+            break;
+        }
+    }
+}
+if ($serviceKey !== '' && $serviceRegionDisplay === '') {
+    $serviceRegionDisplay = AbfallioI18N::t('SETTINGS', 'MSG_REGION_UNKNOWN');
+}
+$fetchInterval = max(6, min(168, (int) ($config['fetch_interval_hours'] ?? 6)));
 $fetchFuzz = (int) ($config['fetch_fuzz_minutes'] ?? 30);
 $categoriesFilter = implode(', ', $config['categories_filter'] ?? []);
 
-$dictJson = json_encode(WasteapiioI18N::all(), JSON_UNESCAPED_UNICODE);
+$dictJson = json_encode(AbfallioI18N::all(), JSON_UNESCAPED_UNICODE);
 
 // On a real LoxBerry, use the standard admin shell (main menu, panels) like other plugins.
 $use_loxberry_frame = class_exists('LBWeb', false);
@@ -75,7 +109,7 @@ $use_loxberry_frame = class_exists('LBWeb', false);
 $waste_plugin_css = <<<'WASTE_CSS'
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; color: #333; line-height: 1.5; }
-        .wasteapiio-lb-embed { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #333; line-height: 1.5; }
+        .abfallio-lb-embed { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #333; line-height: 1.5; }
         .plugin-container { max-width: 960px; margin: 0 auto; padding: 20px; }
 WASTE_CSS;
 
@@ -90,11 +124,11 @@ $waste_plugin_css .= <<<'WASTE_CSS'
         .plugin-header .lang-switch select option { color: #333; }
 
         /* Top sub-navigation: same pattern as other LoxBerry plugins (links + full page), not JS-only buttons */
-        .wasteapiio-subnav { display: flex; flex-wrap: wrap; background: #fff; border-bottom: 2px solid #e0e0e0; }
-        a.wasteapiio-tab { padding: 12px 24px; cursor: pointer; font-size: 0.95em; color: #666; transition: all 0.2s; position: relative; text-decoration: none; display: inline-block; }
-        a.wasteapiio-tab:hover { color: #2e7d32; }
-        a.wasteapiio-tab.active { color: #2e7d32; font-weight: 600; }
-        a.wasteapiio-tab.active::after { content: ''; position: absolute; bottom: -2px; left: 0; right: 0; height: 3px; background: #2e7d32; border-radius: 2px 2px 0 0; }
+        .abfallio-subnav { display: flex; flex-wrap: wrap; background: #fff; border-bottom: 2px solid #e0e0e0; }
+        a.abfallio-tab { padding: 12px 24px; cursor: pointer; font-size: 0.95em; color: #666; transition: all 0.2s; position: relative; text-decoration: none; display: inline-block; }
+        a.abfallio-tab:hover { color: #2e7d32; }
+        a.abfallio-tab.active { color: #2e7d32; font-weight: 600; }
+        a.abfallio-tab.active::after { content: ''; position: absolute; bottom: -2px; left: 0; right: 0; height: 3px; background: #2e7d32; border-radius: 2px 2px 0 0; }
 
         .tab-content { display: none; background: #fff; padding: 24px; border-radius: 0 0 8px 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
         .tab-content.active { display: block; }
@@ -138,6 +172,7 @@ $waste_plugin_css .= <<<'WASTE_CSS'
         .status-card.error { border-left-color: #e53935; }
         .status-card .label { font-size: 0.8em; color: #888; text-transform: uppercase; letter-spacing: 0.5px; }
         .status-card .value { font-size: 1.2em; font-weight: 600; margin-top: 4px; word-break: break-word; }
+        #status-location { white-space: pre-line; font-size: 1.05em; line-height: 1.45; }
 
         .termine-table { width: 100%; border-collapse: collapse; margin-top: 16px; }
         .termine-table th { background: #f5f5f5; padding: 10px 14px; text-align: left; font-size: 0.85em; color: #666; text-transform: uppercase; }
@@ -194,13 +229,13 @@ if ($use_loxberry_frame) {
     $ti = 0;
     foreach ($tabKeys as $tk => $i18k) {
         $navbar[$ti++] = [
-            'Name' => WasteapiioI18N::t('TABS', $i18k),
-            'URL' => wasteapiio_tab_href($tk, $activeLang),
+            'Name' => AbfallioI18N::t('TABS', $i18k),
+            'URL' => abfallio_tab_href($tk, $activeLang),
             'active' => ($tab === $tk) ? 1 : 0,
         ];
     }
     LBWeb::lbheader(
-        WasteapiioI18N::t('COMMON', 'PLUGIN_TITLE'),
+        AbfallioI18N::t('COMMON', 'PLUGIN_TITLE'),
         '',
         ''
     );
@@ -211,7 +246,7 @@ if ($use_loxberry_frame) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= htmlspecialchars(WasteapiioI18N::t('COMMON', 'PLUGIN_TITLE')) ?> - Plugin</title>
+    <title><?= htmlspecialchars(AbfallioI18N::t('COMMON', 'PLUGIN_TITLE')) ?> - Plugin</title>
     <style>
 <?= $waste_plugin_css ?>
     </style>
@@ -220,19 +255,19 @@ if ($use_loxberry_frame) {
 <?php
 }
 ?>
-<div class="plugin-container<?= $use_loxberry_frame ? ' wasteapiio-lb-embed' : '' ?>" data-active-tab="<?= htmlspecialchars($tab, ENT_QUOTES, 'UTF-8') ?>">
+<div class="plugin-container<?= $use_loxberry_frame ? ' abfallio-lb-embed' : '' ?>" data-active-tab="<?= htmlspecialchars($tab, ENT_QUOTES, 'UTF-8') ?>">
     <div class="plugin-header">
-        <img src="icon_64.png" alt="<?= htmlspecialchars(WasteapiioI18N::t('COMMON', 'PLUGIN_TITLE')) ?>" onerror="this.style.display='none'">
+        <img src="icon_64.png" alt="<?= htmlspecialchars(AbfallioI18N::t('COMMON', 'PLUGIN_TITLE')) ?>" onerror="this.style.display='none'">
         <div>
-            <h1><?= htmlspecialchars(WasteapiioI18N::t('COMMON', 'PLUGIN_TITLE')) ?></h1>
-            <div class="subtitle"><?= htmlspecialchars(WasteapiioI18N::t('COMMON', 'PLUGIN_SUBTITLE')) ?></div>
+            <h1><?= htmlspecialchars(AbfallioI18N::t('COMMON', 'PLUGIN_TITLE')) ?></h1>
+            <div class="subtitle"><?= htmlspecialchars(AbfallioI18N::t('COMMON', 'PLUGIN_SUBTITLE')) ?></div>
         </div>
         <label class="lang-switch">
-            <span><?= htmlspecialchars(WasteapiioI18N::t('COMMON', 'LANGUAGE_LABEL')) ?>:</span>
+            <span><?= htmlspecialchars(AbfallioI18N::t('COMMON', 'LANGUAGE_LABEL')) ?>:</span>
             <select id="lang-switch" onchange="onLangChange(this.value)">
                 <?php foreach ($availableLangs as $lc): ?>
                     <option value="<?= htmlspecialchars($lc) ?>"<?= $lc === $activeLang ? ' selected' : '' ?>>
-                        <?= htmlspecialchars(WasteapiioI18N::t('COMMON', 'LANGUAGE_OPTION_' . $lc, strtoupper($lc))) ?>
+                        <?= htmlspecialchars(AbfallioI18N::t('COMMON', 'LANGUAGE_OPTION_' . $lc, strtoupper($lc))) ?>
                     </option>
                 <?php endforeach; ?>
             </select>
@@ -247,12 +282,12 @@ if (!$use_loxberry_frame) {
         'settings' => 'TAB_SETTINGS',
         'log' => 'TAB_LOG',
     ];
-    echo '<nav class="wasteapiio-subnav" role="tablist" aria-label="Sections">';
+    echo '<nav class="abfallio-subnav" role="tablist" aria-label="Sections">';
     foreach ($tabKeys as $tk => $i18k) {
-        $u = htmlspecialchars(wasteapiio_tab_href($tk, $activeLang), ENT_QUOTES, 'UTF-8');
-        $cls = 'wasteapiio-tab' . ($tab === $tk ? ' active' : '');
+        $u = htmlspecialchars(abfallio_tab_href($tk, $activeLang), ENT_QUOTES, 'UTF-8');
+        $cls = 'abfallio-tab' . ($tab === $tk ? ' active' : '');
         echo '<a role="tab" class="' . htmlspecialchars($cls, ENT_QUOTES, 'UTF-8') . '" href="' . $u . '">' .
-            htmlspecialchars(WasteapiioI18N::t('TABS', $i18k)) . '</a>';
+            htmlspecialchars(AbfallioI18N::t('TABS', $i18k)) . '</a>';
     }
     echo "</nav>\n";
 }
@@ -261,95 +296,191 @@ if (!$use_loxberry_frame) {
     <!-- STATUS TAB -->
     <div class="tab-content<?= $tab === 'status' ? ' active' : '' ?>" id="tab-status">
         <div id="status-alert"></div>
-        <details class="alert alert-info intro-box intro-details" id="wasteapiio-getting-started">
+        <details class="alert alert-info intro-box intro-details" id="abfallio-getting-started">
             <summary>
-                <span class="intro-summary-title"><?= htmlspecialchars(WasteapiioI18N::t('INTRO', 'SUMMARY', WasteapiioI18N::t('INTRO', 'TITLE'))) ?></span>
+                <span class="intro-summary-title"><?= htmlspecialchars(AbfallioI18N::t('INTRO', 'SUMMARY', AbfallioI18N::t('INTRO', 'TITLE'))) ?></span>
                 <?php
-                $introHint = trim((string) WasteapiioI18N::t('INTRO', 'SUMMARY_HINT', ''));
+                $introHint = trim((string) AbfallioI18N::t('INTRO', 'SUMMARY_HINT', ''));
                 if ($introHint !== '') { ?>
                 <span class="intro-summary-hint"><?= htmlspecialchars($introHint) ?></span>
                 <?php } ?>
             </summary>
             <div class="intro-body">
-                <p class="intro-lead"><?= htmlspecialchars(WasteapiioI18N::t('INTRO', 'LEAD')) ?></p>
+                <p class="intro-lead"><?= htmlspecialchars(AbfallioI18N::t('INTRO', 'LEAD')) ?></p>
                 <ol class="intro-steps">
-                    <li><?= htmlspecialchars(WasteapiioI18N::t('INTRO', 'STEP1')) ?></li>
-                    <li><?= htmlspecialchars(WasteapiioI18N::t('INTRO', 'STEP2')) ?></li>
-                    <li><?= htmlspecialchars(WasteapiioI18N::t('INTRO', 'STEP3')) ?></li>
-                    <li><?= htmlspecialchars(WasteapiioI18N::t('INTRO', 'STEP4')) ?></li>
+                    <li><?= htmlspecialchars(AbfallioI18N::t('INTRO', 'STEP1')) ?></li>
+                    <li><?= htmlspecialchars(AbfallioI18N::t('INTRO', 'STEP2')) ?></li>
+                    <li><?= htmlspecialchars(AbfallioI18N::t('INTRO', 'STEP3')) ?></li>
+                    <li><?= htmlspecialchars(AbfallioI18N::t('INTRO', 'STEP4')) ?></li>
                 </ol>
-                <p class="intro-footnote" style="margin-top:0.75em;font-size:0.9em;opacity:0.95;"><?= htmlspecialchars(WasteapiioI18N::t('INTRO', 'FOOTNOTE')) ?></p>
+                <p class="intro-footnote" style="margin-top:0.75em;font-size:0.9em;opacity:0.95;"><?= htmlspecialchars(AbfallioI18N::t('INTRO', 'FOOTNOTE')) ?></p>
+            </div>
+        </details>
+        <details class="alert intro-box intro-details" id="abfallio-legal-disclaimer" style="margin-top:12px; border:1px solid #cfd8dc; background:#f5f5f5;">
+            <summary style="cursor:pointer; font-size:0.9em; color:#444;"><?= htmlspecialchars(AbfallioI18N::t('INTRO', 'LEGAL_SUMMARY')) ?></summary>
+            <div class="intro-body" style="padding-top:0.5rem; font-size:0.86em; line-height:1.55; color:#444;">
+                <?php th('INTRO', 'LEGAL_BLOCK_HTML'); ?>
             </div>
         </details>
         <div class="status-grid" id="status-grid">
             <div class="status-card" id="sc-cookie">
-                <div class="label"><?= htmlspecialchars(WasteapiioI18N::t('STATUS', 'LABEL_DATA_SOURCE')) ?></div>
-                <div class="value" id="status-cookie"><?= htmlspecialchars(WasteapiioI18N::t('STATUS', 'MSG_STATUS_LOADING')) ?></div>
+                <div class="label"><?= htmlspecialchars(AbfallioI18N::t('STATUS', 'LABEL_DATA_SOURCE')) ?></div>
+                <div class="value" id="status-cookie"><?= htmlspecialchars(AbfallioI18N::t('STATUS', 'MSG_STATUS_LOADING')) ?></div>
             </div>
             <div class="status-card" id="sc-location">
-                <div class="label"><?= htmlspecialchars(WasteapiioI18N::t('STATUS', 'LABEL_LOCATION')) ?></div>
+                <div class="label"><?= htmlspecialchars(AbfallioI18N::t('STATUS', 'LABEL_REGION_AND_ADDRESS')) ?></div>
                 <div class="value" id="status-location">-</div>
             </div>
             <div class="status-card" id="sc-fetch">
-                <div class="label"><?= htmlspecialchars(WasteapiioI18N::t('STATUS', 'LABEL_LAST_FETCH')) ?></div>
+                <div class="label"><?= htmlspecialchars(AbfallioI18N::t('STATUS', 'LABEL_LAST_FETCH')) ?></div>
                 <div class="value" id="status-fetch">-</div>
             </div>
             <div class="status-card" id="sc-next">
-                <div class="label"><?= htmlspecialchars(WasteapiioI18N::t('STATUS', 'LABEL_NEXT_FETCH')) ?></div>
+                <div class="label"><?= htmlspecialchars(AbfallioI18N::t('STATUS', 'LABEL_NEXT_FETCH')) ?></div>
                 <div class="value" id="status-next">-</div>
             </div>
             <div class="status-card" id="sc-count">
-                <div class="label"><?= htmlspecialchars(WasteapiioI18N::t('STATUS', 'LABEL_CATEGORIES')) ?></div>
+                <div class="label"><?= htmlspecialchars(AbfallioI18N::t('STATUS', 'LABEL_CATEGORIES')) ?></div>
                 <div class="value" id="status-count">-</div>
             </div>
             <div class="status-card" id="sc-mqtt">
-                <div class="label"><?= htmlspecialchars(WasteapiioI18N::t('SETTINGS', 'LABEL_MQTT_STATUS')) ?></div>
+                <div class="label"><?= htmlspecialchars(AbfallioI18N::t('SETTINGS', 'LABEL_MQTT_STATUS')) ?></div>
                 <div class="value" id="status-mqtt">-</div>
             </div>
         </div>
 
-        <h3 style="margin-bottom: 12px;"><?= htmlspecialchars(WasteapiioI18N::t('STATUS', 'TITLE_DATA')) ?></h3>
+        <h3 style="margin-bottom: 12px;"><?= htmlspecialchars(AbfallioI18N::t('STATUS', 'TITLE_DATA')) ?></h3>
         <div id="termine-container">
-            <p style="color: #999;"><?= htmlspecialchars(WasteapiioI18N::t('STATUS', 'MSG_LOADING')) ?></p>
+            <p style="color: #999;"><?= htmlspecialchars(AbfallioI18N::t('STATUS', 'MSG_LOADING')) ?></p>
         </div>
 
         <div class="btn-group">
-            <button class="btn btn-primary" id="btn-fetch" onclick="doFetch()"><?= htmlspecialchars(WasteapiioI18N::t('STATUS', 'BTN_FETCH')) ?></button>
-            <button class="btn btn-secondary" id="btn-download" onclick="downloadJSON()"><?= htmlspecialchars(WasteapiioI18N::t('STATUS', 'BTN_DOWNLOAD')) ?></button>
+            <button class="btn btn-primary" id="btn-fetch" onclick="doFetch()"><?= htmlspecialchars(AbfallioI18N::t('STATUS', 'BTN_FETCH')) ?></button>
+            <button class="btn btn-secondary" id="btn-download" onclick="downloadJSON()"><?= htmlspecialchars(AbfallioI18N::t('STATUS', 'BTN_DOWNLOAD')) ?></button>
         </div>
     </div>
 
-    <!-- LOCATION TAB -->
+    <!-- LOCATION TAB: Entsorgungsregion zuerst, dann Straße -->
     <div class="tab-content<?= $tab === 'location' ? ' active' : '' ?>" id="tab-location">
+        <p class="abfallio-location-order-hint" style="font-size:0.9em; color:#444; line-height:1.5; margin:0 0 1rem;"><?= htmlspecialchars(AbfallioI18N::t('LOCATION', 'HINT_REGION_THEN_STREET')) ?></p>
+
+        <h3 class="section-title" style="margin-top:0; padding-top:0; border-top:none;"><?= htmlspecialchars(AbfallioI18N::t('SETTINGS', 'SECTION_API_REGION')) ?></h3>
+        <div class="form-group">
+            <label for="service-region-search"><?= htmlspecialchars(AbfallioI18N::t('SETTINGS', 'LABEL_SERVICE_REGION')) ?></label>
+            <input type="text" id="service-region-search" value="<?= htmlspecialchars($serviceRegionDisplay) ?>" placeholder="<?= htmlspecialchars(AbfallioI18N::t('SETTINGS', 'PLACEHOLDER_SERVICE_REGION')) ?>" autocomplete="off" spellcheck="false">
+            <div class="search-results" id="service-region-results" style="display:none;max-width:100%;"></div>
+            <input type="hidden" id="service-key" value="<?= htmlspecialchars($serviceKey) ?>">
+            <small><?= htmlspecialchars(AbfallioI18N::t('SETTINGS', 'HELP_SERVICE_REGION')) ?></small>
+            <div style="margin-top:0.5rem;">
+                <button type="button" class="btn btn-secondary" id="btn-refresh-service-map" onclick="refreshServiceMapList()"><?= htmlspecialchars(AbfallioI18N::t('SETTINGS', 'BTN_REFRESH_SERVICE_MAP')) ?></button>
+            </div>
+            <small style="display:block;margin-top:0.35em;"><?= htmlspecialchars(AbfallioI18N::t('SETTINGS', 'HELP_SERVICE_MAP_REFRESH')) ?></small>
+        </div>
+
+        <details class="abfallio-supported-regions" id="abfallio-supported-regions" data-testid="abfallio-supported-regions" data-region-count="<?= (int) $abfallioServiceMapCount ?>" style="margin:0 0 1rem; border:1px solid #e0e0e0; border-radius:8px; padding:0.75rem 1rem; background:#fafafa;">
+            <summary style="cursor:pointer; font-weight:600; color:#2e7d32; font-size:0.95em;">
+                <?php
+                $sum = AbfallioI18N::t('SETTINGS', 'SUPPORTED_REGIONS_SUMMARY');
+                echo htmlspecialchars(str_replace('%n', (string) $abfallioServiceMapCount, $sum));
+                ?>
+            </summary>
+            <p style="font-size:0.88em; color:#555; margin:0.6rem 0 0.5rem; line-height:1.5;"><?php te('SETTINGS', 'SUPPORTED_REGIONS_INTRO'); ?></p>
+            <?php
+            $srcKey = 'SUPPORTED_REGIONS_SOURCE_' . strtoupper($abfallioServiceMapListSource);
+            $srcLine = AbfallioI18N::t('SETTINGS', $srcKey, '');
+            if ($srcLine === '') {
+                $srcLine = AbfallioI18N::t('SETTINGS', 'SUPPORTED_REGIONS_SOURCE_NONE', '');
+            }
+            ?>
+            <p style="font-size:0.8em; color:#666; margin:0 0 0.5rem;">
+                <strong><?= htmlspecialchars(AbfallioI18N::t('SETTINGS', 'SUPPORTED_REGIONS_LIST_LABEL'), ENT_QUOTES, 'UTF-8') ?></strong>
+                <?= $srcLine !== '' ? ' ' . htmlspecialchars($srcLine, ENT_QUOTES, 'UTF-8') : '' ?>
+            </p>
+            <?php if ($abfallioServiceMapCount > 0) { ?>
+            <ul id="abfallio-region-list" class="abfallio-region-name-list" data-testid="abfallio-region-list" style="list-style:disc; padding-left:1.35rem; max-height:min(50vh, 320px); overflow-y:auto; margin:0.25rem 0 0.5rem; font-size:0.88em; line-height:1.45;">
+                <?php
+                foreach ($abfallioServiceMapDisplay as $row) {
+                    if (!is_array($row)) {
+                        continue;
+                    }
+                    $rtitle = (string) ($row['title'] ?? '');
+                    $rurl = trim((string) ($row['url'] ?? ''));
+                    $href = '';
+                    if ($rurl !== '' && (stripos($rurl, 'https://') === 0 || stripos($rurl, 'http://') === 0)) {
+                        $href = $rurl;
+                    }
+                    ?>
+                <li class="abfallio-region-list-item" style="margin-bottom:0.4em;">
+                    <div class="abfallio-region-title"><?= htmlspecialchars($rtitle, ENT_QUOTES, 'UTF-8') ?></div>
+                    <?php if ($href !== '') { ?>
+                    <div class="abfallio-region-url" style="font-size:0.9em; margin-top:0.2em; line-height:1.35;">
+                        <a href="<?= htmlspecialchars($href, ENT_QUOTES, 'UTF-8') ?>"
+                           rel="noopener noreferrer"
+                           target="_blank"
+                           style="word-break:break-all; color:#1565c0; text-decoration:none; border-bottom:1px solid rgba(21,101,192,0.35);"
+                        ><?= htmlspecialchars($href, ENT_QUOTES, 'UTF-8') ?></a>
+                    </div>
+                    <?php } ?>
+                </li>
+                <?php } ?>
+            </ul>
+            <?php } else { ?>
+            <p style="color:#b71c1c; font-size:0.88em; margin:0.25rem 0 0.5rem;"><?= htmlspecialchars(AbfallioI18N::t('SETTINGS', 'SUPPORTED_REGIONS_EMPTY')) ?></p>
+            <?php } ?>
+            <p style="font-size:0.78em; color:#666; margin:0.4rem 0 0; line-height:1.5;"><?php th('SETTINGS', 'SUPPORTED_REGIONS_FOOTNOTE'); ?></p>
+        </details>
+
+        <details class="abfallio-expert-service" style="margin: 0 0 1rem;">
+            <summary style="cursor: pointer; font-size: 0.9em; color: #555;"><?= htmlspecialchars(AbfallioI18N::t('SETTINGS', 'EXPERT_SERVICE_TOGGLE')) ?></summary>
+            <div class="form-group" style="margin-top:0.75rem; margin-bottom:0;">
+                <label for="service-key-expert"><?= htmlspecialchars(AbfallioI18N::t('SETTINGS', 'LABEL_SERVICE_KEY')) ?></label>
+                <input type="text" id="service-key-expert" value="<?= htmlspecialchars($serviceKey) ?>" placeholder="<?= htmlspecialchars(AbfallioI18N::t('SETTINGS', 'PLACEHOLDER_SERVICE_KEY')) ?>" maxlength="32" pattern="[0-9a-fA-F]{0,32}" autocomplete="off" inputmode="verbatim" spellcheck="false" style="font-family: ui-monospace, monospace;">
+                <small><?= htmlspecialchars(AbfallioI18N::t('SETTINGS', 'HELP_SERVICE_KEY')) ?></small>
+            </div>
+        </details>
+
+        <div class="form-group" style="margin-bottom:1rem;">
+            <button type="button" class="btn btn-primary" id="btn-save-config-from-location" onclick="saveSettings('tab-location')"><?= htmlspecialchars(AbfallioI18N::t('LOCATION', 'BTN_SAVE_CONFIG')) ?></button>
+            <button type="button" class="btn btn-secondary" id="btn-reset-region" onclick="resetRegion()"><?= htmlspecialchars(AbfallioI18N::t('LOCATION', 'BTN_RESET_REGION')) ?></button>
+            <small style="display:block; margin-top:0.5em; color:#555;"><?= htmlspecialchars(AbfallioI18N::t('LOCATION', 'HELP_SAVE_CONFIG')) ?></small>
+            <small style="display:block; margin-top:0.35em; color:#666;"><?= htmlspecialchars(AbfallioI18N::t('LOCATION', 'HELP_RESET_REGION')) ?></small>
+        </div>
+
+        <h3 class="section-title"><?= htmlspecialchars(AbfallioI18N::t('LOCATION', 'SECTION_STREET')) ?></h3>
         <?php if (!empty($location['street_name'])): ?>
         <div class="selected-location">
-            <strong><?= htmlspecialchars(WasteapiioI18N::t('LOCATION', 'CURRENT_LOCATION')) ?></strong>
+            <strong><?= htmlspecialchars(AbfallioI18N::t('LOCATION', 'CURRENT_LOCATION')) ?></strong>
             <?= htmlspecialchars(trim($location['street_name'] . ' ' . ($location['hnr_name'] ?? ''))) ?>
         </div>
         <?php endif; ?>
 
         <div class="form-group">
-            <label><?= htmlspecialchars(WasteapiioI18N::t('LOCATION', 'LABEL_SEARCH')) ?></label>
-            <input type="text" id="street-search" placeholder="<?= htmlspecialchars(WasteapiioI18N::t('LOCATION', 'PLACEHOLDER_SEARCH')) ?>" autocomplete="off">
+            <label><?= htmlspecialchars(AbfallioI18N::t('LOCATION', 'LABEL_SEARCH')) ?></label>
+            <input type="text" id="street-search" placeholder="<?= htmlspecialchars(AbfallioI18N::t('LOCATION', 'PLACEHOLDER_SEARCH')) ?>" autocomplete="off">
             <div class="search-results" id="street-results" style="display:none;"></div>
         </div>
 
         <div class="form-group" id="hnr-group" style="display:none;">
-            <label><?= htmlspecialchars(WasteapiioI18N::t('LOCATION', 'LABEL_HNR')) ?></label>
+            <label><?= htmlspecialchars(AbfallioI18N::t('LOCATION', 'LABEL_HNR')) ?></label>
             <div class="search-results" id="hnr-results"></div>
         </div>
 
-        <div id="location-selection" class="wasteapiio-location-selection" style="display:none;" data-testid="wasteapiio-location-selection">
+        <div id="location-selection" class="abfallio-location-selection" style="display:none;" data-testid="abfallio-location-selection">
             <div class="alert alert-info">
-                <strong><?= htmlspecialchars(WasteapiioI18N::t('LOCATION', 'SELECTED')) ?></strong>
+                <strong><?= htmlspecialchars(AbfallioI18N::t('LOCATION', 'SELECTED')) ?></strong>
                 <span id="selected-street"></span> <span id="selected-hnr"></span>
             </div>
-            <button class="btn btn-primary" onclick="saveLocation()"><?= htmlspecialchars(WasteapiioI18N::t('LOCATION', 'BTN_SAVE')) ?></button>
+            <button class="btn btn-primary" onclick="saveLocation()"><?= htmlspecialchars(AbfallioI18N::t('LOCATION', 'BTN_SAVE')) ?></button>
+        </div>
+
+        <div class="form-group" style="margin-top: 0.75rem;">
+            <button type="button" class="btn btn-secondary" id="btn-reset-street" onclick="resetStreetOnly()"><?= htmlspecialchars(AbfallioI18N::t('LOCATION', 'BTN_RESET_STREET')) ?></button>
+            <small style="display:block; margin-top:0.4em; color:#666;"><?= htmlspecialchars(AbfallioI18N::t('LOCATION', 'HELP_RESET_STREET')) ?></small>
         </div>
 
         <div class="alert alert-info" style="margin-top: 20px;">
-            <strong><?= htmlspecialchars(WasteapiioI18N::t('LOCATION', 'INFO_DATA_SOURCE_TITLE')) ?></strong>
-            <?= htmlspecialchars(WasteapiioI18N::t('LOCATION', 'INFO_DATA_SOURCE_TEXT')) ?>
+            <strong><?= htmlspecialchars(AbfallioI18N::t('LOCATION', 'INFO_DATA_SOURCE_TITLE')) ?></strong>
+            <?= htmlspecialchars(AbfallioI18N::t('LOCATION', 'INFO_DATA_SOURCE_TEXT')) ?>
         </div>
     </div>
 
@@ -357,107 +488,107 @@ if (!$use_loxberry_frame) {
     <div class="tab-content<?= $tab === 'settings' ? ' active' : '' ?>" id="tab-settings">
         <div id="settings-alert"></div>
 
-        <h3 class="section-title" style="margin-top:0; padding-top:0; border-top:none;"><?= htmlspecialchars(WasteapiioI18N::t('SETTINGS', 'SECTION_FETCHING')) ?></h3>
+        <h3 class="section-title" style="margin-top:0; padding-top:0; border-top:none;"><?= htmlspecialchars(AbfallioI18N::t('SETTINGS', 'SECTION_FETCHING')) ?></h3>
 
         <div class="form-row">
             <div class="form-group">
-                <label><?= htmlspecialchars(WasteapiioI18N::t('SETTINGS', 'LABEL_INTERVAL')) ?></label>
-                <input type="number" id="fetch-interval" value="<?= $fetchInterval ?>" min="1" max="168">
+                <label><?= htmlspecialchars(AbfallioI18N::t('SETTINGS', 'LABEL_INTERVAL')) ?></label>
+                <input type="number" id="fetch-interval" value="<?= $fetchInterval ?>" min="6" max="168">
             </div>
             <div class="form-group">
-                <label><?= htmlspecialchars(WasteapiioI18N::t('SETTINGS', 'LABEL_FUZZ')) ?></label>
+                <label><?= htmlspecialchars(AbfallioI18N::t('SETTINGS', 'LABEL_FUZZ')) ?></label>
                 <input type="number" id="fetch-fuzz" value="<?= $fetchFuzz ?>" min="0" max="360">
-                <small><?= htmlspecialchars(WasteapiioI18N::t('SETTINGS', 'HELP_FUZZ')) ?></small>
+                <small><?= htmlspecialchars(AbfallioI18N::t('SETTINGS', 'HELP_FUZZ')) ?></small>
             </div>
         </div>
 
         <div class="form-group">
-            <label for="categories-filter"><?= htmlspecialchars(WasteapiioI18N::t('SETTINGS', 'LABEL_CATEGORIES')) ?></label>
-            <input type="text" id="categories-filter" list="categories-datalist" placeholder="<?= htmlspecialchars(WasteapiioI18N::t('SETTINGS', 'PLACEHOLDER_CATEGORIES')) ?>" value="<?= htmlspecialchars($categoriesFilter) ?>" autocomplete="off">
+            <label for="categories-filter"><?= htmlspecialchars(AbfallioI18N::t('SETTINGS', 'LABEL_CATEGORIES')) ?></label>
+            <input type="text" id="categories-filter" list="categories-datalist" placeholder="<?= htmlspecialchars(AbfallioI18N::t('SETTINGS', 'PLACEHOLDER_CATEGORIES')) ?>" value="<?= htmlspecialchars($categoriesFilter) ?>" autocomplete="off">
             <datalist id="categories-datalist"></datalist>
-            <small><?= htmlspecialchars(WasteapiioI18N::t('SETTINGS', 'HELP_CATEGORIES')) ?></small>
-            <div id="category-filter-checkboxes" class="category-filter-checkboxes" role="group" aria-label="<?= htmlspecialchars(WasteapiioI18N::t('SETTINGS', 'ARIA_CATEGORIES')) ?>"></div>
+            <small><?= htmlspecialchars(AbfallioI18N::t('SETTINGS', 'HELP_CATEGORIES')) ?></small>
+            <div id="category-filter-checkboxes" class="category-filter-checkboxes" role="group" aria-label="<?= htmlspecialchars(AbfallioI18N::t('SETTINGS', 'ARIA_CATEGORIES')) ?>"></div>
         </div>
 
-        <h3 class="section-title"><?= htmlspecialchars(WasteapiioI18N::t('SETTINGS', 'SECTION_INTEGRATION')) ?></h3>
-        <p style="font-size: 0.9em; color: #444; line-height: 1.5; margin: 0 0 10px;"><?= htmlspecialchars(WasteapiioI18N::t('SETTINGS', 'HELP_INTEGRATION_INTRO')) ?></p>
+        <h3 class="section-title"><?= htmlspecialchars(AbfallioI18N::t('SETTINGS', 'SECTION_INTEGRATION')) ?></h3>
+        <p style="font-size: 0.9em; color: #444; line-height: 1.5; margin: 0 0 10px;"><?= htmlspecialchars(AbfallioI18N::t('SETTINGS', 'HELP_INTEGRATION_INTRO')) ?></p>
         <ul style="font-size: 0.9em; color: #444; margin: 0 0 18px; padding-left: 1.25rem; line-height: 1.5;">
-            <li style="margin-bottom: 0.4em;"><?= htmlspecialchars(WasteapiioI18N::t('SETTINGS', 'HELP_INTEGRATION_BULLET_LOXONE')) ?></li>
-            <li style="margin-bottom: 0.4em;"><?= htmlspecialchars(WasteapiioI18N::t('SETTINGS', 'HELP_INTEGRATION_BULLET_MQTT')) ?></li>
-            <li><?= htmlspecialchars(WasteapiioI18N::t('SETTINGS', 'HELP_INTEGRATION_BULLET_JSON')) ?></li>
+            <li style="margin-bottom: 0.4em;"><?= htmlspecialchars(AbfallioI18N::t('SETTINGS', 'HELP_INTEGRATION_BULLET_LOXONE')) ?></li>
+            <li style="margin-bottom: 0.4em;"><?= htmlspecialchars(AbfallioI18N::t('SETTINGS', 'HELP_INTEGRATION_BULLET_MQTT')) ?></li>
+            <li><?= htmlspecialchars(AbfallioI18N::t('SETTINGS', 'HELP_INTEGRATION_BULLET_JSON')) ?></li>
         </ul>
 
-        <h3 class="section-title"><?= htmlspecialchars(WasteapiioI18N::t('SETTINGS', 'SECTION_MQTT')) ?></h3>
+        <h3 class="section-title"><?= htmlspecialchars(AbfallioI18N::t('SETTINGS', 'SECTION_MQTT')) ?></h3>
 
         <div class="form-group">
             <div class="checkbox-row">
                 <input type="checkbox" id="mqtt-enabled"<?= $mqttEnabled ? ' checked' : '' ?>>
-                <label for="mqtt-enabled" style="margin-bottom:0;"><?= htmlspecialchars(WasteapiioI18N::t('SETTINGS', 'LABEL_MQTT_ENABLE')) ?></label>
+                <label for="mqtt-enabled" style="margin-bottom:0;"><?= htmlspecialchars(AbfallioI18N::t('SETTINGS', 'LABEL_MQTT_ENABLE')) ?></label>
             </div>
-            <small><?= htmlspecialchars(WasteapiioI18N::t('SETTINGS', 'HELP_MQTT')) ?></small>
+            <small><?= htmlspecialchars(AbfallioI18N::t('SETTINGS', 'HELP_MQTT')) ?></small>
         </div>
 
         <div class="form-group">
             <div class="checkbox-row">
                 <input type="checkbox" id="mqtt-use-loxberry"<?= $mqttUseLb ? ' checked' : '' ?>>
-                <label for="mqtt-use-loxberry" style="margin-bottom:0;"><?= htmlspecialchars(WasteapiioI18N::t('SETTINGS', 'LABEL_MQTT_USE_LOXBERRY')) ?></label>
+                <label for="mqtt-use-loxberry" style="margin-bottom:0;"><?= htmlspecialchars(AbfallioI18N::t('SETTINGS', 'LABEL_MQTT_USE_LOXBERRY')) ?></label>
             </div>
         </div>
 
         <div class="form-row">
             <div class="form-group">
-                <label><?= htmlspecialchars(WasteapiioI18N::t('SETTINGS', 'LABEL_MQTT_HOST')) ?></label>
+                <label><?= htmlspecialchars(AbfallioI18N::t('SETTINGS', 'LABEL_MQTT_HOST')) ?></label>
                 <input type="text" id="mqtt-host" value="<?= htmlspecialchars($mqttHost) ?>" placeholder="localhost">
             </div>
             <div class="form-group">
-                <label><?= htmlspecialchars(WasteapiioI18N::t('SETTINGS', 'LABEL_MQTT_PORT')) ?></label>
+                <label><?= htmlspecialchars(AbfallioI18N::t('SETTINGS', 'LABEL_MQTT_PORT')) ?></label>
                 <input type="number" id="mqtt-port" value="<?= $mqttPort ?>" min="1" max="65535">
             </div>
         </div>
 
         <div class="form-row">
             <div class="form-group">
-                <label><?= htmlspecialchars(WasteapiioI18N::t('SETTINGS', 'LABEL_MQTT_USER')) ?></label>
+                <label><?= htmlspecialchars(AbfallioI18N::t('SETTINGS', 'LABEL_MQTT_USER')) ?></label>
                 <input type="text" id="mqtt-user" value="<?= htmlspecialchars($mqttUser) ?>" autocomplete="off">
             </div>
             <div class="form-group">
-                <label><?= htmlspecialchars(WasteapiioI18N::t('SETTINGS', 'LABEL_MQTT_PASSWORD')) ?></label>
+                <label><?= htmlspecialchars(AbfallioI18N::t('SETTINGS', 'LABEL_MQTT_PASSWORD')) ?></label>
                 <input type="password" id="mqtt-password" value="<?= htmlspecialchars($mqttPassword) ?>" autocomplete="new-password">
             </div>
         </div>
 
         <div class="form-row">
             <div class="form-group">
-                <label><?= htmlspecialchars(WasteapiioI18N::t('SETTINGS', 'LABEL_MQTT_TOPIC')) ?></label>
-                <input type="text" id="mqtt-topic" value="<?= htmlspecialchars($mqttTopic) ?>" placeholder="loxberry/wasteapiio">
+                <label><?= htmlspecialchars(AbfallioI18N::t('SETTINGS', 'LABEL_MQTT_TOPIC')) ?></label>
+                <input type="text" id="mqtt-topic" value="<?= htmlspecialchars($mqttTopic) ?>" placeholder="loxberry/abfallio">
             </div>
             <div class="form-group">
                 <label>&nbsp;</label>
                 <div class="checkbox-row">
                     <input type="checkbox" id="mqtt-retain"<?= $mqttRetain ? ' checked' : '' ?>>
-                    <label for="mqtt-retain" style="margin-bottom:0;"><?= htmlspecialchars(WasteapiioI18N::t('SETTINGS', 'LABEL_MQTT_RETAIN')) ?></label>
+                    <label for="mqtt-retain" style="margin-bottom:0;"><?= htmlspecialchars(AbfallioI18N::t('SETTINGS', 'LABEL_MQTT_RETAIN')) ?></label>
                 </div>
             </div>
         </div>
 
-        <button class="btn btn-primary" onclick="saveSettings()"><?= htmlspecialchars(WasteapiioI18N::t('SETTINGS', 'BTN_SAVE')) ?></button>
+        <button class="btn btn-primary" onclick="saveSettings()"><?= htmlspecialchars(AbfallioI18N::t('SETTINGS', 'BTN_SAVE')) ?></button>
 
-        <h3 class="section-title"><?= htmlspecialchars(WasteapiioI18N::t('SETTINGS', 'SECTION_LOXONE')) ?></h3>
+        <h3 class="section-title"><?= htmlspecialchars(AbfallioI18N::t('SETTINGS', 'SECTION_LOXONE')) ?></h3>
 
         <div class="form-group">
-            <label><?= htmlspecialchars(WasteapiioI18N::t('SETTINGS', 'LABEL_LOXONE_ENDPOINT')) ?></label>
+            <label><?= htmlspecialchars(AbfallioI18N::t('SETTINGS', 'LABEL_LOXONE_ENDPOINT')) ?></label>
             <input type="text" readonly value="http://&lt;loxberry-ip&gt;/plugins/<?= htmlspecialchars($lbplugindir) ?>/loxone.php" style="background: #f8f9fa; color: #333; font-family: monospace;">
-            <small><?= WasteapiioI18N::t('SETTINGS', 'HELP_LOXONE_ENDPOINT') ?></small>
+            <small><?= AbfallioI18N::t('SETTINGS', 'HELP_LOXONE_ENDPOINT') ?></small>
         </div>
 
         <div style="background: #f8f9fa; border-radius: 8px; padding: 16px; margin-top: 12px;">
-            <p style="font-weight: 600; margin-bottom: 8px;"><?= htmlspecialchars(WasteapiioI18N::t('SETTINGS', 'TITLE_LOXONE_PATTERNS')) ?></p>
-            <p style="font-size: 0.85em; color: #666; margin-bottom: 12px;"><?= htmlspecialchars(WasteapiioI18N::t('SETTINGS', 'HELP_LOXONE_PATTERNS')) ?></p>
+            <p style="font-weight: 600; margin-bottom: 8px;"><?= htmlspecialchars(AbfallioI18N::t('SETTINGS', 'TITLE_LOXONE_PATTERNS')) ?></p>
+            <p style="font-size: 0.85em; color: #666; margin-bottom: 12px;"><?= htmlspecialchars(AbfallioI18N::t('SETTINGS', 'HELP_LOXONE_PATTERNS')) ?></p>
             <table style="width: 100%; font-size: 0.85em; border-collapse: collapse;">
                 <thead>
                     <tr style="border-bottom: 2px solid #ddd;">
-                        <th style="text-align: left; padding: 6px 8px;"><?= htmlspecialchars(WasteapiioI18N::t('SETTINGS', 'COL_LABEL')) ?></th>
-                        <th style="text-align: left; padding: 6px 8px;"><?= htmlspecialchars(WasteapiioI18N::t('SETTINGS', 'COL_PATTERN')) ?></th>
+                        <th style="text-align: left; padding: 6px 8px;"><?= htmlspecialchars(AbfallioI18N::t('SETTINGS', 'COL_LABEL')) ?></th>
+                        <th style="text-align: left; padding: 6px 8px;"><?= htmlspecialchars(AbfallioI18N::t('SETTINGS', 'COL_PATTERN')) ?></th>
                     </tr>
                 </thead>
                 <tbody id="loxone-patterns">
@@ -472,37 +603,37 @@ if (!$use_loxberry_frame) {
         </div>
 
         <div class="form-group" style="margin-top: 16px;">
-            <label><?= htmlspecialchars(WasteapiioI18N::t('SETTINGS', 'LABEL_LOXONE_SINGLE')) ?></label>
+            <label><?= htmlspecialchars(AbfallioI18N::t('SETTINGS', 'LABEL_LOXONE_SINGLE')) ?></label>
             <input type="text" readonly value="http://&lt;loxberry-ip&gt;/plugins/<?= htmlspecialchars($lbplugindir) ?>/loxone.php?cat=&lt;category&gt;" style="background: #f8f9fa; color: #333; font-family: monospace;">
-            <small><?= WasteapiioI18N::t('SETTINGS', 'HELP_LOXONE_SINGLE') ?></small>
+            <small><?= AbfallioI18N::t('SETTINGS', 'HELP_LOXONE_SINGLE') ?></small>
         </div>
 
         <div class="form-group" style="margin-top: 8px;">
-            <label><?= htmlspecialchars(WasteapiioI18N::t('SETTINGS', 'LABEL_LOXONE_LIST')) ?></label>
+            <label><?= htmlspecialchars(AbfallioI18N::t('SETTINGS', 'LABEL_LOXONE_LIST')) ?></label>
             <input type="text" readonly value="http://&lt;loxberry-ip&gt;/plugins/<?= htmlspecialchars($lbplugindir) ?>/loxone.php?format=list" style="background: #f8f9fa; color: #333; font-family: monospace;">
-            <small><?= htmlspecialchars(WasteapiioI18N::t('SETTINGS', 'HELP_LOXONE_LIST')) ?></small>
+            <small><?= htmlspecialchars(AbfallioI18N::t('SETTINGS', 'HELP_LOXONE_LIST')) ?></small>
         </div>
 
         <div class="form-group" style="margin-top: 8px;">
-            <label><?= htmlspecialchars(WasteapiioI18N::t('SETTINGS', 'LABEL_LOXONE_JSON')) ?></label>
+            <label><?= htmlspecialchars(AbfallioI18N::t('SETTINGS', 'LABEL_LOXONE_JSON')) ?></label>
             <input type="text" readonly value="http://&lt;loxberry-ip&gt;/plugins/<?= htmlspecialchars($lbplugindir) ?>/index.php" style="background: #f8f9fa; color: #333; font-family: monospace;">
-            <small><?= htmlspecialchars(WasteapiioI18N::t('SETTINGS', 'HELP_LOXONE_JSON')) ?></small>
+            <small><?= htmlspecialchars(AbfallioI18N::t('SETTINGS', 'HELP_LOXONE_JSON')) ?></small>
         </div>
 
         <div class="form-group" style="margin-top: 8px;">
-            <label><?= htmlspecialchars(WasteapiioI18N::t('SETTINGS', 'LABEL_DEBUG')) ?></label>
+            <label><?= htmlspecialchars(AbfallioI18N::t('SETTINGS', 'LABEL_DEBUG')) ?></label>
             <input type="text" readonly value="http://&lt;loxberry-ip&gt;/plugins/<?= htmlspecialchars($lbplugindir) ?>/loxone.php?debug" style="background: #f8f9fa; color: #333; font-family: monospace;">
-            <small><?= htmlspecialchars(WasteapiioI18N::t('SETTINGS', 'HELP_DEBUG')) ?></small>
+            <small><?= htmlspecialchars(AbfallioI18N::t('SETTINGS', 'HELP_DEBUG')) ?></small>
         </div>
     </div>
 
     <!-- LOG TAB -->
     <div class="tab-content<?= $tab === 'log' ? ' active' : '' ?>" id="tab-log">
         <div class="btn-group" style="margin-bottom: 16px; margin-top: 0;">
-            <button class="btn btn-secondary" onclick="loadLog()"><?= htmlspecialchars(WasteapiioI18N::t('LOG', 'BTN_REFRESH')) ?></button>
-            <button class="btn btn-danger" onclick="clearLog()"><?= htmlspecialchars(WasteapiioI18N::t('LOG', 'BTN_CLEAR')) ?></button>
+            <button class="btn btn-secondary" onclick="loadLog()"><?= htmlspecialchars(AbfallioI18N::t('LOG', 'BTN_REFRESH')) ?></button>
+            <button class="btn btn-danger" onclick="clearLog()"><?= htmlspecialchars(AbfallioI18N::t('LOG', 'BTN_CLEAR')) ?></button>
         </div>
-        <div class="log-output" id="log-content"><?= htmlspecialchars(WasteapiioI18N::t('LOG', 'MSG_LOADING')) ?></div>
+        <div class="log-output" id="log-content"><?= htmlspecialchars(AbfallioI18N::t('LOG', 'MSG_LOADING')) ?></div>
     </div>
 </div>
 
@@ -511,7 +642,7 @@ var ajaxUrl = 'ajax.php';
 var selectedStreet = null;
 var selectedHnr = null;
 /** Last termine object from status (for category UI refresh). */
-var wasteapiioLastTermine = {};
+var abfallioLastTermine = {};
 var L = <?= $dictJson ?>;
 function tt(section, key, fallback) {
     if (L && L[section] && L[section][key] != null) return L[section][key];
@@ -524,7 +655,7 @@ function onLangChange(lc) {
     window.location.href = url.toString();
 }
 
-function wasteapiioFormBody(obj) {
+function abfallioFormBody(obj) {
     var p = new URLSearchParams();
     Object.keys(obj).forEach(function(k) {
         var v = obj[k];
@@ -533,7 +664,7 @@ function wasteapiioFormBody(obj) {
     return p;
 }
 
-function wasteapiioGetJson(params) {
+function abfallioGetJson(params) {
     var u = new URL(ajaxUrl, window.location.href);
     Object.keys(params).forEach(function(k) {
         u.searchParams.set(k, params[k]);
@@ -549,10 +680,10 @@ function wasteapiioGetJson(params) {
         });
 }
 
-function wasteapiioPostForm(obj) {
+function abfallioPostForm(obj) {
     return fetch(ajaxUrl, {
         method: 'POST',
-        body: wasteapiioFormBody(obj),
+        body: abfallioFormBody(obj),
         credentials: 'same-origin',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
     }).then(function(r) {
@@ -565,7 +696,7 @@ function wasteapiioPostForm(obj) {
     });
 }
 
-function wasteapiioFetchWithTimeout(getParams, timeoutMs) {
+function abfallioFetchWithTimeout(getParams, timeoutMs) {
     var c = new AbortController();
     var t = setTimeout(function() { c.abort(); }, timeoutMs);
     var u = new URL(ajaxUrl, window.location.href);
@@ -579,7 +710,7 @@ function wasteapiioFetchWithTimeout(getParams, timeoutMs) {
 }
 
 /* Tabs: server-rendered (?tab=) + LoxBerry $navbar; no client-only .tab buttons. */
-(function initWasteapiioFromUrl() {
+(function initAbfallioFromUrl() {
     var pc = document.querySelector('.plugin-container');
     var at = (pc && pc.getAttribute('data-active-tab')) || 'status';
     var u = new URL(window.location.href);
@@ -596,18 +727,18 @@ function wasteapiioFetchWithTimeout(getParams, timeoutMs) {
     } else if (at === 'log') {
         loadLog();
     } else if (at === 'settings') {
-        wasteapiioGetJson({ action: 'status' })
+        abfallioGetJson({ action: 'status' })
             .then(function(data) {
                 if (data && !data.error) {
-                    wasteapiioLastTermine = (data.cached_data && data.cached_data.termine) || {};
-                    wasteapiioRefreshCategoryUI(wasteapiioLastTermine);
+                    abfallioLastTermine = (data.cached_data && data.cached_data.termine) || {};
+                    abfallioRefreshCategoryUI(abfallioLastTermine);
                 }
             })
             .catch(function() { /* optional */ });
     }
 })();
 
-function wasteapiioSelectedFilterNames() {
+function abfallioSelectedFilterNames() {
     var inp = document.getElementById('categories-filter');
     if (!inp) return [];
     var raw = inp.value.trim();
@@ -615,7 +746,7 @@ function wasteapiioSelectedFilterNames() {
     return raw.split(',').map(function(s) { return s.trim(); }).filter(Boolean);
 }
 
-function wasteapiioSyncCheckboxesToInput() {
+function abfallioSyncCheckboxesToInput() {
     var box = document.getElementById('category-filter-checkboxes');
     if (!box) return;
     var names = [];
@@ -631,7 +762,7 @@ function wasteapiioSyncCheckboxesToInput() {
     }
 }
 
-function wasteapiioRefreshCategoryUI(termine) {
+function abfallioRefreshCategoryUI(termine) {
     termine = termine || {};
     var keys = Object.keys(termine).sort(function(a, b) { return a.localeCompare(b); });
     var dl = document.getElementById('categories-datalist');
@@ -646,7 +777,7 @@ function wasteapiioRefreshCategoryUI(termine) {
     var box = document.getElementById('category-filter-checkboxes');
     if (!box) return;
     var selected = {};
-    wasteapiioSelectedFilterNames().forEach(function(n) { selected[n] = true; });
+    abfallioSelectedFilterNames().forEach(function(n) { selected[n] = true; });
     var hasFilter = Object.keys(selected).length > 0;
     box.innerHTML = '';
     if (keys.length === 0) {
@@ -657,7 +788,7 @@ function wasteapiioRefreshCategoryUI(termine) {
         return;
     }
     keys.forEach(function(k, idx) {
-        var id = 'wasteapiio-cat-' + idx;
+        var id = 'abfallio-cat-' + idx;
         var row = document.createElement('label');
         var cb = document.createElement('input');
         cb.type = 'checkbox';
@@ -665,7 +796,7 @@ function wasteapiioRefreshCategoryUI(termine) {
         cb.id = id;
         cb.value = k;
         cb.checked = hasFilter ? !!selected[k] : false;
-        cb.addEventListener('change', function() { wasteapiioSyncCheckboxesToInput(); });
+        cb.addEventListener('change', function() { abfallioSyncCheckboxesToInput(); });
         row.appendChild(cb);
         var span = document.createElement('span');
         span.textContent = k;
@@ -675,16 +806,86 @@ function wasteapiioRefreshCategoryUI(termine) {
 }
 
 var categoriesFilterInputBound = false;
-function wasteapiioBindCategoriesFilterInput() {
+function abfallioBindCategoriesFilterInput() {
     if (categoriesFilterInputBound) return;
     var inp = document.getElementById('categories-filter');
     if (!inp) return;
     categoriesFilterInputBound = true;
     inp.addEventListener('change', function() {
-        wasteapiioRefreshCategoryUI(wasteapiioLastTermine);
+        abfallioRefreshCategoryUI(abfallioLastTermine);
     });
 }
-wasteapiioBindCategoriesFilterInput();
+abfallioBindCategoriesFilterInput();
+
+var serviceRegionTimer = null;
+var serviceRegionSearchInput = document.getElementById('service-region-search');
+if (serviceRegionSearchInput) {
+    serviceRegionSearchInput.addEventListener('input', function() {
+        var q = this.value.trim();
+        clearTimeout(serviceRegionTimer);
+        if (q.length < 2) {
+            var res = document.getElementById('service-region-results');
+            if (res) res.style.display = 'none';
+            return;
+        }
+        serviceRegionTimer = setTimeout(function() { searchServiceRegion(q); }, 350);
+    });
+}
+var serviceKeyExpert = document.getElementById('service-key-expert');
+if (serviceKeyExpert) {
+    function syncExpertToServiceKey() {
+        var sk = document.getElementById('service-key');
+        if (!sk) return;
+        var v = (serviceKeyExpert && serviceKeyExpert.value) ? serviceKeyExpert.value.trim().toLowerCase() : '';
+        var only = v.replace(/[^a-f0-9]/g, '').slice(0, 32);
+        if (v === '') {
+            sk.value = '';
+        } else {
+            sk.value = only;
+        }
+    }
+    serviceKeyExpert.addEventListener('input', syncExpertToServiceKey);
+    serviceKeyExpert.addEventListener('change', syncExpertToServiceKey);
+}
+
+function searchServiceRegion(q) {
+    abfallioGetJson({ action: 'search_service', q: q })
+        .then(function(data) {
+            var el = document.getElementById('service-region-results');
+            if (!el) return;
+            if (!data || data.error || !Array.isArray(data) || data.length === 0) {
+                el.innerHTML = '<div class="search-result-msg" style="color:#999;">' + tt('LOCATION', 'MSG_NO_RESULTS') + '</div>';
+                el.style.display = 'block';
+                return;
+            }
+            el.innerHTML = '';
+            data.forEach(function(item) {
+                var div = document.createElement('div');
+                div.className = 'search-result';
+                div.textContent = item.name || item.title;
+                div.onclick = function() { selectServiceRegion(item); };
+                el.appendChild(div);
+            });
+            el.style.display = 'block';
+        })
+        .catch(function() {
+            var el = document.getElementById('service-region-results');
+            if (!el) return;
+            el.innerHTML = '<div class="search-result-msg" style="color:#c62828;">' + tt('LOCATION', 'MSG_SEARCH_FAILED') + '</div>';
+            el.style.display = 'block';
+        });
+}
+
+function selectServiceRegion(item) {
+    var hid = document.getElementById('service-key');
+    var vis = document.getElementById('service-region-search');
+    var exp = document.getElementById('service-key-expert');
+    if (hid) hid.value = (item.id || '').toLowerCase();
+    if (vis) vis.value = item.name || item.title || '';
+    if (exp) exp.value = hid ? hid.value : '';
+    var el = document.getElementById('service-region-results');
+    if (el) el.style.display = 'none';
+}
 
 var searchTimer = null;
 document.getElementById('street-search').addEventListener('input', function() {
@@ -698,9 +899,14 @@ document.getElementById('street-search').addEventListener('input', function() {
 });
 
 function searchStreet(q) {
-    wasteapiioGetJson({ action: 'search_street', q: q })
+    abfallioGetJson({ action: 'search_street', q: q })
         .then(function(data) {
             var el = document.getElementById('street-results');
+            if (data && data.error === 'service_key_required') {
+                el.innerHTML = '<div class="search-result-msg" style="color:#b71c1c;">' + tt('LOCATION', 'MSG_SERVICE_KEY_REQUIRED') + '</div>';
+                el.style.display = 'block';
+                return;
+            }
             if (!data || data.error || !Array.isArray(data) || data.length === 0) {
                 el.innerHTML = '<div class="search-result-msg" style="color:#999;">' + tt('LOCATION', 'MSG_NO_RESULTS') + '</div>';
                 el.style.display = 'block';
@@ -736,9 +942,13 @@ function selectStreet(item) {
     document.getElementById('hnr-results').innerHTML =
         '<div class="search-result-msg" style="color:#999;">' + tt('LOCATION','HNR_LOADING') + '</div>';
 
-    wasteapiioGetJson({ action: 'search_hnr', street_id: item.id })
+    abfallioGetJson({ action: 'search_hnr', street_id: item.id })
         .then(function(data) {
             var el = document.getElementById('hnr-results');
+            if (data && data.error === 'service_key_required') {
+                el.innerHTML = '<div class="search-result-msg" style="color:#b71c1c;">' + tt('LOCATION', 'MSG_SERVICE_KEY_REQUIRED') + '</div>';
+                return;
+            }
             if (!data || data.error || !Array.isArray(data) || data.length === 0) {
                 el.innerHTML = '<div class="search-result-msg" style="color:#999;">' + tt('LOCATION', 'HNR_NONE_FOUND') + '</div>';
                 return;
@@ -782,7 +992,7 @@ function saveLocation() {
         hnr_id: selectedHnr.id,
         hnr_name: selectedHnr.name
     };
-    wasteapiioPostForm(data)
+    abfallioPostForm(data)
         .then(function(resp) {
             if (resp.success) {
                 showAlert('tab-location', tt('LOCATION', 'MSG_SAVED'), 'success');
@@ -801,11 +1011,40 @@ function saveLocation() {
         });
 }
 
-function saveSettings() {
+function refreshServiceMapList() {
+    var btn = document.getElementById('btn-refresh-service-map');
+    if (btn) {
+        btn.disabled = true;
+    }
+    abfallioGetJson({ action: 'refresh_service_map' })
+        .then(function(resp) {
+            if (btn) {
+                btn.disabled = false;
+            }
+            if (resp && resp.success) {
+                var n = (resp && typeof resp.count === 'number') ? resp.count : 0;
+                var msg = tt('SETTINGS', 'MSG_SERVICE_MAP_REFRESHED').split('%n').join(String(n));
+                showAlert('tab-location', msg, 'success');
+            } else {
+                var err = (resp && resp.error) ? String(resp.error) : 'Refresh failed';
+                showAlert('tab-location', err, 'error');
+            }
+        })
+        .catch(function() {
+            if (btn) {
+                btn.disabled = false;
+            }
+            showAlert('tab-location', tt('STATUS', 'MSG_CONNECTION_ERROR'), 'error');
+        });
+}
+
+function saveSettings(alertTab, onSuccess) {
+    var tab = alertTab || 'tab-settings';
     var filter = document.getElementById('categories-filter').value.trim();
     var filterArr = filter ? filter.split(',').map(function(s) { return s.trim(); }).filter(Boolean) : [];
-    wasteapiioPostForm({
+    abfallioPostForm({
         action: 'save_settings',
+        service_key: document.getElementById('service-key').value.trim(),
         fetch_interval_hours: document.getElementById('fetch-interval').value,
         fetch_fuzz_minutes: document.getElementById('fetch-fuzz').value,
         categories_filter: JSON.stringify(filterArr),
@@ -820,13 +1059,52 @@ function saveSettings() {
     })
         .then(function(resp) {
             if (resp.success) {
-                showAlert('tab-settings', tt('SETTINGS', 'MSG_SAVED'), 'success');
+                showAlert(tab, tt('SETTINGS', 'MSG_SAVED'), 'success');
+                if (typeof onSuccess === 'function') {
+                    onSuccess();
+                }
             } else {
-                showAlert('tab-settings', 'Error: ' + (resp.error || 'Unknown'), 'error');
+                var err = (resp.error || 'Unknown');
+                if (resp.code === 'service_key') {
+                    err = tt('SETTINGS', 'MSG_SERVICE_KEY_INVALID');
+                }
+                showAlert(tab, 'Error: ' + err, 'error');
             }
         })
         .catch(function() {
-            showAlert('tab-settings', tt('STATUS', 'MSG_CONNECTION_ERROR'), 'error');
+            showAlert(tab, tt('STATUS', 'MSG_CONNECTION_ERROR'), 'error');
+        });
+}
+
+function resetRegion() {
+    if (!confirm(tt('LOCATION', 'CONFIRM_RESET_REGION'))) {
+        return;
+    }
+    document.getElementById('service-key').value = '';
+    document.getElementById('service-region-search').value = '';
+    var exp = document.getElementById('service-key-expert');
+    if (exp) {
+        exp.value = '';
+    }
+    saveSettings('tab-location', function() {
+        window.location.reload();
+    });
+}
+
+function resetStreetOnly() {
+    if (!confirm(tt('LOCATION', 'CONFIRM_RESET_STREET'))) {
+        return;
+    }
+    abfallioPostForm({ action: 'reset_location' })
+        .then(function(resp) {
+            if (resp && resp.success) {
+                window.location.reload();
+            } else {
+                showAlert('tab-location', 'Error: ' + (resp && resp.error ? resp.error : 'Unknown'), 'error');
+            }
+        })
+        .catch(function() {
+            showAlert('tab-location', tt('STATUS', 'MSG_CONNECTION_ERROR'), 'error');
         });
 }
 
@@ -834,7 +1112,7 @@ function doFetch() {
     var btn = document.getElementById('btn-fetch');
     btn.disabled = true;
     btn.innerHTML = '<span class="spinner"></span> ' + tt('STATUS','BTN_FETCHING');
-    wasteapiioFetchWithTimeout({ action: 'fetch_now' }, 30000)
+    abfallioFetchWithTimeout({ action: 'fetch_now' }, 30000)
         .then(function(resp) {
             btn.disabled = false;
             btn.textContent = tt('STATUS', 'BTN_FETCH');
@@ -857,7 +1135,7 @@ function downloadJSON() {
 }
 
 function loadStatus() {
-    wasteapiioGetJson({ action: 'status' })
+    abfallioGetJson({ action: 'status' })
         .then(function(data) {
         if (data.error) {
             document.getElementById('status-cookie').textContent = tt('STATUS','MSG_STATUS_ERROR');
@@ -868,7 +1146,25 @@ function loadStatus() {
 
         document.getElementById('status-cookie').textContent = data.api_mode || tt('STATUS', 'DATA_SOURCE_VALUE');
         document.getElementById('sc-cookie').className = 'status-card';
-        document.getElementById('status-location').textContent = data.location_api || data.location || '-';
+        var locEl = document.getElementById('status-location');
+        var locCard = document.getElementById('sc-location');
+        if (typeof data.has_region === 'boolean' && typeof data.has_street === 'boolean') {
+            var lineR = data.has_region
+                ? tt('STATUS', 'SETUP_REGION_OK').split('%s').join(data.region_title || '—')
+                : tt('STATUS', 'SETUP_REGION_MISSING');
+            var lineS = data.has_street
+                ? tt('STATUS', 'SETUP_STREET_OK').split('%s').join((data.location || '—').trim() || '—')
+                : tt('STATUS', 'SETUP_STREET_MISSING');
+            locEl.textContent = lineR + '\n' + lineS;
+            if (data.has_region && data.has_street) {
+                locCard.className = 'status-card';
+            } else {
+                locCard.className = 'status-card warning';
+            }
+        } else {
+            locEl.textContent = data.location_api || data.location || '-';
+            locCard.className = 'status-card';
+        }
         document.getElementById('status-fetch').textContent = data.last_fetch || '-';
         document.getElementById('status-next').textContent = data.next_fetch_due || '-';
         document.getElementById('status-count').textContent = data.termine_count || '0';
@@ -887,8 +1183,8 @@ function loadStatus() {
         }
 
         var termine = (data.cached_data || {}).termine || {};
-        wasteapiioLastTermine = termine;
-        wasteapiioRefreshCategoryUI(termine);
+        abfallioLastTermine = termine;
+        abfallioRefreshCategoryUI(termine);
         var keys = Object.keys(termine);
         if (keys.length === 0) {
             document.getElementById('termine-container').innerHTML =
@@ -923,7 +1219,7 @@ function loadStatus() {
 }
 
 function loadLog() {
-    wasteapiioGetJson({ action: 'log' })
+    abfallioGetJson({ action: 'log' })
         .then(function(data) {
             var el = document.getElementById('log-content');
             if (!data.log || data.log.trim() === '') {
@@ -941,16 +1237,21 @@ function loadLog() {
 
 function clearLog() {
     if (!confirm(tt('LOG','CONFIRM_CLEAR'))) return;
-    wasteapiioGetJson({ action: 'clear_log' }).then(function() { loadLog(); });
+    abfallioGetJson({ action: 'clear_log' }).then(function() { loadLog(); });
 }
 
 function showAlert(tabId, message, type) {
     var container = document.getElementById(tabId);
-    var alertEl = container.querySelector('.alert') || document.createElement('div');
-    alertEl.className = 'alert alert-' + type;
+    if (!container) return;
+    var alertEl = container.querySelector('.abfallio-dynamic-alert');
+    if (!alertEl) {
+        alertEl = document.createElement('div');
+        alertEl.className = 'abfallio-dynamic-alert';
+        container.insertBefore(alertEl, container.firstChild);
+    }
+    alertEl.className = 'alert alert-' + type + ' abfallio-dynamic-alert';
     alertEl.textContent = message;
-    if (!alertEl.parentNode) container.insertBefore(alertEl, container.firstChild);
-    setTimeout(function() { alertEl.remove(); }, 5000);
+    setTimeout(function() { if (alertEl && alertEl.parentNode) alertEl.remove(); }, 5000);
 }
 
 </script>

@@ -21,7 +21,7 @@ const version = readVersion();
 const zipPath = path.join(
   root,
   "dist",
-  `loxberry-plugin-wasteapiio-${version}.zip`,
+  `loxberry-plugin-abfallio-${version}.zip`,
 );
 
 if (!fs.existsSync(zipPath)) {

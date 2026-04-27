@@ -27,6 +27,10 @@ describe("live street/fetch smoke", function () {
   });
 
   it("searches street, saves location, and fetches waste data", function () {
+    const testKey = (process.env.TEST_SERVICE_KEY ?? "6efba91e69a5b454ac0ae3497978fe1d").trim().toLowerCase();
+    const keySave = runCliJson(["save_config", JSON.stringify({ service_key: testKey })]) as { success?: boolean };
+    expect(keySave.success).to.equal(true);
+
     const streets = runCliJson(["search_street", streetQuery ?? ""]) as Array<{ id: string; name: string }>;
     expect(streets.length).to.be.greaterThan(0);
 
@@ -41,6 +45,7 @@ describe("live street/fetch smoke", function () {
     expect(kommune).to.not.equal("");
 
     const cfg = {
+      service_key: testKey,
       location: {
         f_id_kommune: kommune,
         f_id_strasse: selectedStreet.id,

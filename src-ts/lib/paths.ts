@@ -11,6 +11,11 @@ export interface ResolvedPaths {
   configFile: string;
   cacheFile: string;
   logFile: string;
+  /**
+   * Shipped `data/abfallio-service-map.json` in the plugin package (read-only on appliance).
+   * Prefer `dataDir/abfallio-service-map.json` when present (user refresh).
+   */
+  serviceMapBundledFile: string;
 }
 
 function findRepoRoot(start: string): string {
@@ -107,6 +112,7 @@ export function resolvePaths(): ResolvedPaths {
     logDir = path.join(base, "data");
   }
 
+  const pluginRoot = findRepoRoot(thisDir);
   return {
     configDir,
     dataDir,
@@ -114,5 +120,6 @@ export function resolvePaths(): ResolvedPaths {
     configFile: path.join(configDir, "abfall.json"),
     cacheFile: path.join(dataDir, "abfall_data.json"),
     logFile: path.join(logDir, "abfall.log"),
+    serviceMapBundledFile: path.join(pluginRoot, "data", "abfallio-service-map.json"),
   };
 }

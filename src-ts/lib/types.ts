@@ -27,6 +27,12 @@ export interface MqttPublishStatus {
 
 export interface PluginConfig {
   service_key?: string;
+  /**
+   * Optional https URL: JSON array of { title, url, service_id } or the upstream
+   * `AbfallIO.py` from mampfes/hacs_waste_collection_schedule (default if unset).
+   * Host must be on the GitHub allowlist.
+   */
+  service_map_url?: string;
   language?: string;
   location?: LocationConfig;
   fetch_interval_hours?: number;
@@ -64,6 +70,12 @@ export interface ApiStatus {
   last_fetch: string;
   next_fetch_due: string;
   location: string;
+  /** True if a 32-hex service key is stored. */
+  has_region: boolean;
+  /** Human name from service map, or short key hint if unknown. */
+  region_title: string;
+  /** True if a street (f_id_strasse) is stored. */
+  has_street: boolean;
   location_api: string;
   termine_count: number;
   cached_data: Partial<WasteData> | Record<string, never>;
@@ -79,6 +91,13 @@ export interface ApiStatus {
     /** True = unexpanded `REPLACELB*` in file (node would log MODULE_NOT_FOUND). */
     replacelb_placeholder_found: boolean;
   } | null;
+  /** Which region list file is in use (bundled in plugin vs downloaded to user data). */
+  service_map?: {
+    source: "user" | "bundled" | "none";
+    count: number;
+  };
+  /** False until the user has saved a 32-hex abfall.io service key in Settings. */
+  service_key_configured?: boolean;
 }
 
 export interface SearchItem {

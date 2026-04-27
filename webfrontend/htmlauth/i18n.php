@@ -11,10 +11,10 @@
  *   6. Fallback "de" (German schedules as primary audience)
  *
  * Provides:
- *   WasteapiioI18N::lang()                  -> active language code (e.g. "de", "en")
- *   WasteapiioI18N::availableLanguages()    -> ["de", "en"] (files in templates/lang/)
- *   WasteapiioI18N::all()                   -> full translation array (for JS bridge)
- *   WasteapiioI18N::t($section, $key, $fallback = null)
+ *   AbfallioI18N::lang()                  -> active language code (e.g. "de", "en")
+ *   AbfallioI18N::availableLanguages()    -> ["de", "en"] (files in templates/lang/)
+ *   AbfallioI18N::all()                   -> full translation array (for JS bridge)
+ *   AbfallioI18N::t($section, $key, $fallback = null)
  *   t($section, $key, $fallback)  -> shorthand
  *   te($section, $key, $fallback) -> echo+escape
  *   th($section, $key, $fallback) -> echo raw HTML (allowed for *_HELP_* keys)
@@ -22,7 +22,7 @@
 
 // No strict_types: on some LoxBerry/PHP+Apache stacks, strict t() calls would 500
 // the public `index.php?view=html` path; translations are all trusted strings.
-final class WasteapiioI18N {
+final class AbfallioI18N {
     /** @var array<string, array<string, array<string, string>>> */
     private static $cache = [];
     /** @var string */
@@ -92,8 +92,8 @@ final class WasteapiioI18N {
             // LoxBerry+Apache+PHP combinations (setcookie() caused HTTP 500). Language still
             // applies for the current request via the candidate list above.
         }
-        if (isset($_COOKIE["wasteapiio_lang"])) {
-            $candidates[] = $_COOKIE["wasteapiio_lang"];
+        if (isset($_COOKIE["abfallio_lang"])) {
+            $candidates[] = $_COOKIE["abfallio_lang"];
         }
         if (self::$configuredLang !== "") {
             $candidates[] = self::$configuredLang;
@@ -146,18 +146,18 @@ final class WasteapiioI18N {
 
 if (!function_exists("t")) {
     function t(string $section, string $key, ?string $fallback = null): string {
-        return WasteapiioI18N::t($section, $key, $fallback);
+        return AbfallioI18N::t($section, $key, $fallback);
     }
 }
 
 if (!function_exists("te")) {
     function te(string $section, string $key, ?string $fallback = null): void {
-        echo htmlspecialchars(WasteapiioI18N::t($section, $key, $fallback), ENT_QUOTES, "UTF-8");
+        echo htmlspecialchars(AbfallioI18N::t($section, $key, $fallback), ENT_QUOTES, "UTF-8");
     }
 }
 
 if (!function_exists("th")) {
     function th(string $section, string $key, ?string $fallback = null): void {
-        echo WasteapiioI18N::t($section, $key, $fallback);
+        echo AbfallioI18N::t($section, $key, $fallback);
     }
 }

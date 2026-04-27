@@ -19,7 +19,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 export const REPO_ROOT = path.resolve(__dirname, "..", "..");
-export const PLUGIN_FOLDER = (process.env.PLUGIN_FOLDER || "wasteapiio").trim();
+export const PLUGIN_FOLDER = (process.env.PLUGIN_FOLDER || "abfallio").trim();
 export const ENV_FILE = path.join(REPO_ROOT, ".env");
 
 const CLI_PATH = path.join(
@@ -160,7 +160,7 @@ export function isPluginInstalled(folder: string = PLUGIN_FOLDER): boolean {
 
 /**
  * LoxBerry `plugininstall.cgi?do=uninstall&pid=` expects the **plugin row md5**,
- * not the folder name. Calling `--name wasteapiio` only hits the list page and
+ * not the folder name. Calling `--name abfallio` only hits the list page and
  * does not remove the plugin (HTML response, 200). Always pass the md5 from
  * `plugins list`.
  */
@@ -344,7 +344,7 @@ export function findLatestPluginZip(): string | null {
   if (!fs.existsSync(distDir)) return null;
   const entries = fs
     .readdirSync(distDir)
-    .filter((n) => /^loxberry-plugin-wasteapiio-.*\.zip$/.test(n))
+    .filter((n) => /^loxberry-plugin-abfallio-.*\.zip$/.test(n))
     .map((n) => path.join(distDir, n))
     .sort((a, b) => fs.statSync(b).mtimeMs - fs.statSync(a).mtimeMs);
   return entries[0] ?? null;

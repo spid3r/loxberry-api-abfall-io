@@ -2,21 +2,27 @@ import fs from "node:fs";
 import { log } from "./logger.js";
 import { publishWasteData } from "./mqtt-publisher.js";
 import { readMergedCronInstallProbe, resolvePaths } from "./paths.js";
+import { foldForSearch } from "./fold-for-search.js";
+import { getServiceMapSourceInfo, loadServiceMap, titleForServiceKey } from "./service-map.js";
 import type { ApiStatus, MqttPublishStatus, PluginConfig, SearchItem, WasteData, WasteEntry } from "./types.js";
 
 const DEFAULT_FETCH_INTERVAL_HOURS = 6;
 const DEFAULT_FETCH_FUZZ_MINUTES = 30;
+/** Enforced server-friendly minimum: users cannot poll the upstream more often than this (UI + config). */
+export const MIN_FETCH_INTERVAL_HOURS = 6;
 
 const API_URL = "https://api.abfall.io";
-/**
- * Public “service / region” id used by the official api.abfall.io web apps (not a per-user secret).
- * Shipped in config as empty; {@link effectiveServiceKey} falls back to this. Override only for another published region.
- */
-const DEFAULT_SERVICE_KEY = "6efba91e69a5b454ac0ae3497978fe1d";
 
-function effectiveServiceKey(cfg: PluginConfig): string {
-  const s = cfg.service_key?.trim();
-  return s || DEFAULT_SERVICE_KEY;
+/**
+ * 32-hex abfall.io service key; empty if the user has not set a region yet (no built-in default).
+ */
+export function configuredServiceKey(cfg: PluginConfig): string {
+  return (cfg.service_key ?? "").trim().toLowerCase();
+}
+
+function normalizedFetchIntervalHours(h: number | undefined): number {
+  const v = h ?? DEFAULT_FETCH_INTERVAL_HOURS;
+  return Math.max(MIN_FETCH_INTERVAL_HOURS, Math.min(168, v));
 }
 const MODUS_KEY = "d6c5855a62cf32a4dadbc2831f0f295f";
 const UA = "Mozilla/5.0 (X11; Linux x86_64; rv:145.0) Gecko/20100101 Firefox/145.0";
@@ -95,15 +101,7 @@ export function extractStreetOptions(html: string): SearchItem[] {
   return out;
 }
 
-/** Lowercase + strip diacritics so "Anna-Ro" matches "Anna-Röchling" in client-side search. */
-export function foldForSearch(s: string): string {
-  return s
-    .toLowerCase()
-    .replace(/ß/g, "ss")
-    .normalize("NFD")
-    /* prefer bracket form over \p{M} for older Node on some LoxBerry images */
-    .replace(/[\u0300-\u036f]/g, "");
-}
+export { foldForSearch };
 
 async function initSession(key: string): Promise<{ hiddenFields: Record<string, string>; html: string }> {
   const { text, status } = await apiPost({
@@ -119,8 +117,16 @@ async function initSession(key: string): Promise<{ hiddenFields: Record<string, 
   return { hiddenFields, html: text };
 }
 
-export async function searchStreet(query: string, config = loadConfig()): Promise<SearchItem[]> {
-  const key = effectiveServiceKey(config);
+export type ServiceKeyRequiredError = { error: "service_key_required" };
+
+export async function searchStreet(
+  query: string,
+  config = loadConfig(),
+): Promise<SearchItem[] | ServiceKeyRequiredError> {
+  const key = configuredServiceKey(config);
+  if (!key) {
+    return { error: "service_key_required" };
+  }
   const { html } = await initSession(key);
   const options = extractStreetOptions(html);
   const q = foldForSearch(query);
@@ -129,8 +135,14 @@ export async function searchStreet(query: string, config = loadConfig()): Promis
   return results;
 }
 
-export async function searchHnr(streetId: string, config = loadConfig()): Promise<SearchItem[]> {
-  const key = effectiveServiceKey(config);
+export async function searchHnr(
+  streetId: string,
+  config = loadConfig(),
+): Promise<SearchItem[] | ServiceKeyRequiredError> {
+  const key = configuredServiceKey(config);
+  if (!key) {
+    return { error: "service_key_required" };
+  }
   const { hiddenFields } = await initSession(key);
   try {
     const { text, status } = await apiPost(
@@ -264,7 +276,12 @@ export function inferKommuneFromStreetId(streetId: string): string {
 
 export async function fetchData(config = loadConfig()): Promise<WasteData> {
   const loc = config.location ?? {};
-  const key = effectiveServiceKey(config);
+  const key = configuredServiceKey(config);
+  if (!key) {
+    throw new Error(
+      "No service key configured. In the admin UI, open Settings, choose your waste region (or enter the 32-character key), save, then set your address on the Location tab.",
+    );
+  }
   let fIdKommune = loc.f_id_kommune ?? "";
   const fIdStrasse = loc.f_id_strasse ?? "";
   const fIdStrasseHnr = loc.f_id_strasse_hnr ?? "";
@@ -319,7 +336,7 @@ export async function fetchData(config = loadConfig()): Promise<WasteData> {
   const streetName = loc.street_name ?? `Street ${fIdStrasse}`;
   const hnrName = loc.hnr_name ?? "";
   const location = `${streetName} ${hnrName}`.trim();
-  const intervalHours = config.fetch_interval_hours ?? DEFAULT_FETCH_INTERVAL_HOURS;
+  const intervalHours = normalizedFetchIntervalHours(config.fetch_interval_hours);
   const fuzzMinutes = Math.max(0, config.fetch_fuzz_minutes ?? DEFAULT_FETCH_FUZZ_MINUTES);
   const offsetMinutes = fuzzMinutes === 0 ? 0 : Math.round((Math.random() * 2 - 1) * fuzzMinutes);
   const dueAt = new Date(Date.now() + intervalHours * 3600 * 1000 + offsetMinutes * 60 * 1000);
@@ -368,6 +385,15 @@ export function getStatus(): ApiStatus {
   const cached = cachedData as Partial<WasteData>;
   const mqttStatus: MqttPublishStatus = cached.mqtt ?? { ok: false, last: "" };
 
+  const sm = getServiceMapSourceInfo();
+  const key = configuredServiceKey(cfg);
+  const has_region = key.length > 0;
+  const map = loadServiceMap();
+  const region_title = has_region
+    ? titleForServiceKey(key, map) ?? `${key.slice(0, 8)}…`
+    : "";
+  const strasse = String(loc.f_id_strasse ?? "").trim();
+  const has_street = strasse !== "";
   return {
     cookie_status: "not_needed",
     cookie_created: "",
@@ -376,6 +402,9 @@ export function getStatus(): ApiStatus {
     last_fetch: cached.timestamp ?? "",
     next_fetch_due: cached.next_fetch_due ?? "",
     location: `${loc.street_name ?? ""} ${loc.hnr_name ?? ""}`.trim(),
+    has_region,
+    region_title,
+    has_street,
     location_api: cached.standort ?? "",
     termine_count: Object.keys(cached.termine ?? {}).length,
     cached_data: cachedData,
@@ -383,6 +412,8 @@ export function getStatus(): ApiStatus {
     api_mode: "api.abfall.io",
     mqtt: mqttStatus,
     install_cron: readMergedCronInstallProbe(),
+    service_map: { source: sm.source, count: sm.count },
+    service_key_configured: configuredServiceKey(cfg) !== "",
   };
 }
 
@@ -400,15 +431,22 @@ export function clearLog(): void {
 }
 
 export function shouldFetch(config: PluginConfig, force: boolean, now: Date = new Date()): boolean {
-  if (force) return true;
+  if (force) {
+    return true;
+  }
+  if (!configuredServiceKey(config) || !config.location?.f_id_strasse) {
+    return false;
+  }
   const { cacheFile } = getPaths();
-  if (!fs.existsSync(cacheFile)) return true;
+  if (!fs.existsSync(cacheFile)) {
+    return true;
+  }
   try {
     const cached = JSON.parse(fs.readFileSync(cacheFile, "utf-8")) as Partial<WasteData>;
     const lastTs = cached.timestamp ?? "";
     if (!lastTs) return true;
     const lastDate = new Date(lastTs.replace(" ", "T"));
-    const intervalHours = config.fetch_interval_hours ?? DEFAULT_FETCH_INTERVAL_HOURS;
+    const intervalHours = normalizedFetchIntervalHours(config.fetch_interval_hours);
     const fuzzMinutes = Math.max(0, config.fetch_fuzz_minutes ?? DEFAULT_FETCH_FUZZ_MINUTES);
     const offsetMinutes = cached.next_fetch_offset_minutes ?? 0;
     const dueAt = new Date(

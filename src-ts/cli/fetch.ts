@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { fetchData, loadConfig, shouldFetch } from "../lib/abfall-service.js";
+import { configuredServiceKey, fetchData, loadConfig, shouldFetch } from "../lib/abfall-service.js";
 import { log } from "../lib/logger.js";
 
 async function main(): Promise<void> {
@@ -8,6 +8,10 @@ async function main(): Promise<void> {
   log.info(`Waste collection fetch started${force ? " (forced)" : ""}`);
 
   const config = loadConfig();
+  if (!configuredServiceKey(config)) {
+    log.warn("No service key (waste region) configured — open the plugin admin, Settings, choose your region, save, then set Location. Skipping fetch.");
+    return;
+  }
   if (!config.location?.f_id_strasse) {
     log.warn("No location configured, skipping fetch");
     return;

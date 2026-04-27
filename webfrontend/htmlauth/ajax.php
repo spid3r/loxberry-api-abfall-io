@@ -36,6 +36,23 @@ $node = find_node();
 
 $api_script = $plugin_bin . '/abfall_api.cjs';
 
+/** UTF-8 string length (not byte length) for query limits — avoids edge cases on multibyte characters. */
+function abfallio_utf8_len($s) {
+    if (function_exists('mb_strlen')) {
+        return mb_strlen((string) $s, 'UTF-8');
+    }
+    return strlen((string) $s);
+}
+
+/**
+ * Pass a UTF-8 string to Node on the command line. PHP's escapeshellarg() often
+ * mangles or strips non-ASCII (Umlauts, etc.); the payload is base64 and decodes
+ * in abfall_api.cjs when prefixed with b64: (ASCII-only on the real argv).
+ */
+function abfallio_arg_b64_utf8($s) {
+    return 'b64:' . base64_encode((string) $s);
+}
+
 $action = $_GET['action'] ?? $_POST['action'] ?? '';
 
 function run_api($node, $script, $args, $expect_json = true) {
@@ -98,11 +115,30 @@ switch ($action) {
 
     case 'search_street':
         $q = $_GET['q'] ?? '';
-        if (strlen($q) < 3) {
+        if (abfallio_utf8_len($q) < 3) {
             json_response(['error' => 'Query too short']);
         }
-        $output = run_api($node, $api_script, ['search_street', $q]);
+        $output = run_api($node, $api_script, ['search_street', abfallio_arg_b64_utf8($q)]);
         echo $output ?: json_encode([]);
+        break;
+
+    case 'search_service':
+        $q = $_GET['q'] ?? '';
+        if (abfallio_utf8_len($q) < 2) {
+            json_response(['error' => 'Query too short']);
+        }
+        $output = run_api($node, $api_script, ['search_service', abfallio_arg_b64_utf8($q)]);
+        echo $output ?: json_encode([]);
+        break;
+
+    case 'refresh_service_map':
+        $u = $_GET['url'] ?? '';
+        $args = ['refresh_service_map'];
+        if (trim($u) !== '') {
+            $args[] = $u;
+        }
+        $output = run_api($node, $api_script, $args);
+        echo $output ?: json_encode(['error' => 'No response from refresh_service_map']);
         break;
 
     case 'search_hnr':
@@ -152,10 +188,26 @@ switch ($action) {
         json_response(['success' => true]);
         break;
 
+    case 'reset_location':
+        $config_file = $plugin_config . '/abfall.json';
+        $config = file_exists($config_file) ? (json_decode(file_get_contents($config_file), true) ?: []) : [];
+        $config['location'] = [];
+        file_put_contents($config_file, json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+        json_response(['success' => true]);
+        break;
+
     case 'save_settings':
         $config_file = $plugin_config . '/abfall.json';
         $config = file_exists($config_file) ? (json_decode(file_get_contents($config_file), true) ?: []) : [];
-        $config['fetch_interval_hours'] = max(1, min(168, intval($_POST['fetch_interval_hours'] ?? 6)));
+        $sk = trim((string) ($_POST['service_key'] ?? ''));
+        if ($sk !== '' && !preg_match('/^[a-fA-F0-9]{32}$/', $sk)) {
+            json_response(['success' => false, 'error' => 'Invalid service key', 'code' => 'service_key']);
+        }
+        $config['service_key'] = $sk === '' ? '' : strtolower($sk);
+        if ($sk === '') {
+            $config['location'] = [];
+        }
+        $config['fetch_interval_hours'] = max(6, min(168, intval($_POST['fetch_interval_hours'] ?? 6)));
         $config['fetch_fuzz_minutes'] = max(0, min(360, intval($_POST['fetch_fuzz_minutes'] ?? 30)));
         $filter_raw = $_POST['categories_filter'] ?? '[]';
         $config['categories_filter'] = json_decode($filter_raw, true) ?: [];
@@ -169,7 +221,7 @@ switch ($action) {
         $config['mqtt']['user'] = (string) ($_POST['mqtt_user'] ?? '');
         $config['mqtt']['password'] = (string) ($_POST['mqtt_password'] ?? '');
         $topic = trim((string) ($_POST['mqtt_topic_prefix'] ?? ''));
-        $config['mqtt']['topic_prefix'] = $topic !== '' ? $topic : 'loxberry/wasteapiio';
+        $config['mqtt']['topic_prefix'] = $topic !== '' ? $topic : 'loxberry/abfallio';
         $config['mqtt']['retain'] = !empty($_POST['mqtt_retain']) && $_POST['mqtt_retain'] !== '0';
 
         file_put_contents($config_file, json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));

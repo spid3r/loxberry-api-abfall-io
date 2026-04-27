@@ -20,8 +20,8 @@
       {
         "assets": [
           {
-            "path": "dist/loxberry-plugin-wasteapiio-*.zip",
-            "label": "LoxBerry plugin wasteapiio (${nextRelease.version})"
+            "path": "dist/loxberry-plugin-abfallio-*.zip",
+            "label": "LoxBerry plugin abfallio (${nextRelease.version})"
           }
         ]
       }

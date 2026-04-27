@@ -89,7 +89,7 @@ function collectFiles(dir, base = dir, acc = []) {
 }
 
 const version = readVersion();
-const zipName = `loxberry-plugin-wasteapiio-${version}.zip`;
+const zipName = `loxberry-plugin-abfallio-${version}.zip`;
 const zipPath = path.join(distDir, zipName);
 fs.mkdirSync(distDir, { recursive: true });
 

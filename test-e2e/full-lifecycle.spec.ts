@@ -1,5 +1,5 @@
 /**
- * Maximum end-to-end lifecycle test for the wasteapiio LoxBerry plugin.
+ * Maximum end-to-end lifecycle test for the abfallio LoxBerry plugin.
  *
  * What this test does (in order):
  *   1. Builds a fresh release ZIP via `npm run release:zip`.
@@ -19,6 +19,10 @@
  *   - The whole suite is skipped unless E2E_LIVE=1 is set.
  *   - The whole suite is skipped if any of the required .env vars are missing.
  *   - Run only via `npm run test:e2e:full` (loads .env + sets E2E_LIVE=1).
+ *   - Set E2E_SKIP_SERVICE_REGION=1 if your TEST_STREET_QUERY targets a different
+ *     abfall.io region than the one you will pick in the service-region search step.
+ *   - Set E2E_SKIP_SERVICE_MAP_REFRESH=1 if the LoxBerry has no outbound HTTPS
+ *     to raw.githubusercontent.com (or to avoid a ~1 min GitHub download in CI).
  *
  * THIS IS A DESTRUCTIVE TEST. It uninstalls and reinstalls the plugin on the
  * target LoxBerry. Do NOT run it against production appliances.
@@ -39,7 +43,7 @@ import {
 const E2E_ENABLED = process.env.E2E_LIVE === "1";
 const envCheck = getRequiredEnvVarsAvailable();
 
-test.describe("@e2e wasteapiio full plugin lifecycle (destructive)", () => {
+test.describe("@e2e abfallio full plugin lifecycle (destructive)", () => {
   test.skip(
     !E2E_ENABLED,
     "destructive end-to-end test disabled. Set E2E_LIVE=1 (or run `npm run test:e2e:full`) to enable.",
@@ -129,6 +133,112 @@ test.describe("@e2e wasteapiio full plugin lifecycle (destructive)", () => {
       lastStatus,
       `admin UI did not become reachable; last HTTP status was ${lastStatus}`,
     ).toBe(200);
+
+    await test.step("status tab: legal disclaimer block (EN + DE, ref DISCLAIMER.md)", async () => {
+      const assertLegalExpanded = async (expectedSummary: RegExp) => {
+        const legal = page.locator("#abfallio-legal-disclaimer");
+        await expect(
+          legal,
+          "status tab must render the collapsible legal / disclaimer block",
+        ).toBeVisible();
+        await expect(legal.locator("summary").first()).toContainText(expectedSummary);
+        await legal.locator("summary").first().click();
+        const body = legal.locator(".intro-body").first();
+        await expect(body).toBeVisible({ timeout: 5_000 });
+        await expect(body).toContainText("DISCLAIMER.md");
+        return body;
+      };
+
+      await page.goto(
+        `/admin/plugins/${PLUGIN_FOLDER}/index.php?lang=en&tab=status`,
+        { waitUntil: "domcontentloaded" },
+      );
+      await expect(page.locator("#tab-status.tab-content.active")).toBeVisible({
+        timeout: 15_000,
+      });
+      const enBody = await assertLegalExpanded(/legal|not official|fair use/i);
+      await expect(enBody).toContainText(/6/);
+      await expect(enBody).toContainText(/independent|not affiliated|api\.abfall/i);
+
+      await page.goto(
+        `/admin/plugins/${PLUGIN_FOLDER}/index.php?lang=de&tab=status`,
+        { waitUntil: "domcontentloaded" },
+      );
+      await expect(page.locator("#tab-status.tab-content.active")).toBeVisible({
+        timeout: 15_000,
+      });
+      const deBody = await assertLegalExpanded(
+        /Rechtliches|offiziell|Fair-Use|eigenes Risiko/i,
+      );
+      await expect(deBody).toContainText(/6\s*Stunden|mindestens/);
+      await expect(deBody).toContainText(/unabhängig|api\.abfall|AbfallPlus/i);
+    });
+
+    const skipMapRefresh = process.env.E2E_SKIP_SERVICE_MAP_REFRESH === "1";
+    const skipServiceRegion = process.env.E2E_SKIP_SERVICE_REGION === "1";
+
+    await test.step("location: service region, supported list, optional refresh + optional Ludwigshafen", async () => {
+      const locationSetupUrl = `/admin/plugins/${PLUGIN_FOLDER}/index.php?lang=en&tab=location`;
+      await page.goto(locationSetupUrl);
+      await expect(page.locator("#tab-location.tab-content.active")).toBeVisible({
+        timeout: 15_000,
+      });
+
+      const supportedPanel = page.locator("#abfallio-supported-regions");
+      await expect(supportedPanel, "settings must show which abfall.io providers are in the list").toBeVisible();
+      const dataCount = parseInt(
+        (await supportedPanel.getAttribute("data-region-count")) ?? "0",
+        10,
+      );
+      expect(
+        dataCount,
+        "data-region-count should reflect entries in the service map file",
+      ).toBeGreaterThan(0);
+      await supportedPanel.locator("summary").click();
+      await expect(
+        page.locator("#abfallio-region-list li").first(),
+        "collapsible list should enumerate at least one region",
+      ).toBeVisible({ timeout: 5_000 });
+
+      if (!skipMapRefresh) {
+        await expect(page.locator("#btn-refresh-service-map")).toBeVisible();
+        await page.locator("#btn-refresh-service-map").click();
+        await expect(page.locator("#tab-location .alert-success")).toBeVisible({
+          timeout: 120_000,
+        });
+        const stRefresh = await request.get(
+          `/admin/plugins/${PLUGIN_FOLDER}/ajax.php?action=status`,
+          { timeout: 30_000 },
+        );
+        const stBody = (await stRefresh.text()).trim();
+        const stData = JSON.parse(stBody) as { service_map?: { count: number; source: string } };
+        expect(
+          stData.service_map?.count ?? 0,
+          "status.service_map.count after list refresh from GitHub",
+        ).toBeGreaterThan(0);
+      }
+
+      if (!skipServiceRegion) {
+        const regionSearch = page.locator("#service-region-search");
+        await expect(regionSearch).toBeVisible();
+        await regionSearch.fill("");
+        await regionSearch.type("Ludwigshaf", { delay: 25 });
+        const regResults = page.locator("#service-region-results .search-result");
+        await expect(
+          regResults.filter({ hasText: /Ludwigshafen am Rhein/i }).first(),
+        ).toBeVisible({ timeout: 25_000 });
+        await regResults.filter({ hasText: /Ludwigshafen am Rhein/i }).first().click();
+        await page
+          .getByRole("button", { name: /save region|settings/i })
+          .first()
+          .click();
+        await expect(page.locator("#tab-location .alert-success")).toBeVisible({
+          timeout: 30_000,
+        });
+        const hiddenKey = page.locator("#service-key");
+        await expect(hiddenKey).toHaveValue("6efba91e69a5b454ac0ae3497978fe1d");
+      }
+    });
 
     await page.goto(adminUrl);
 
@@ -268,7 +378,7 @@ test.describe("@e2e wasteapiio full plugin lifecycle (destructive)", () => {
       error?: string;
     };
     if (!snap.termine || Object.keys(snap.termine).length === 0) {
-      const pubHdr = indexSnap.headers()["x-wasteapiio-public-index"] ?? "";
+      const pubHdr = indexSnap.headers()["x-abfallio-public-index"] ?? "";
       const legacyNoCode = Boolean(
         snap.error && !snap.code && !snap.termine,
       );
@@ -310,6 +420,7 @@ test.describe("@e2e wasteapiio full plugin lifecycle (destructive)", () => {
         error?: string;
         termine_count?: number;
         mqtt?: { ok?: boolean; last?: string };
+        service_map?: { source: string; count: number };
         install_cron?: {
           merged_cron_path: string;
           file_exists: boolean;
@@ -322,6 +433,10 @@ test.describe("@e2e wasteapiio full plugin lifecycle (destructive)", () => {
         "status.termine_count should be > 0 after fetch",
       ).toBe(true);
       expect(data.mqtt, "status should include mqtt object").toBeDefined();
+      expect(
+        data.service_map && data.service_map.count > 0,
+        `status.service_map should list bundled or user region file (got ${JSON.stringify(data.service_map)})`,
+      ).toBe(true);
       if (data.install_cron) {
         expect(
           data.install_cron.file_exists,

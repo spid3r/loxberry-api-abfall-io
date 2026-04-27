@@ -4,7 +4,7 @@
  *
  * @return array{0: string, 1: list<array{label: string, path: string, exists: bool}>}
  */
-function wasteapiio_find_abfall_data_json(): array
+function abfallio_find_abfall_data_json(): array
 {
     $tried_paths = [];
     $candidates = [

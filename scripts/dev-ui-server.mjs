@@ -56,6 +56,11 @@ function mockStatus() {
   };
 }
 
+/** Same as ajax.php abfallio_arg_b64_utf8 / Node decodeShellQueryArg (UTF-8 safe on all hosts). */
+function argB64Utf8(s) {
+  return `b64:${Buffer.from(String(s), "utf8").toString("base64")}`;
+}
+
 function runNodeCli(args, expectJson = true) {
   const cli = path.join(root, "bin", "abfall_api.cjs");
   const proc = spawnSync("node", [cli, ...args], {
@@ -90,8 +95,8 @@ function transformPhpToHtml(file) {
         .split(/\r?\n/)
         .find((l) => l.startsWith("FOLDER="))
         ?.split("=")[1]
-        ?.trim() || "wasteapiio")
-    : "wasteapiio";
+        ?.trim() || "abfallio")
+    : "abfallio";
   let content = fs.readFileSync(file, "utf-8");
   content = content.replace(/<\?php[\s\S]*?\?>/g, "");
   content = content.replace(/<\?=.+?\?>/g, pluginFolder);
@@ -113,7 +118,15 @@ const server = http.createServer(async (req, res) => {
     } else if (action === "search_street") {
       payload = mockMode
         ? [{ id: "5916main-street", name: "Main Street" }]
-        : runNodeCli(["search_street", getParam("q")]);
+        : runNodeCli(["search_street", argB64Utf8(getParam("q"))]);
+    } else if (action === "search_service") {
+      payload = mockMode
+        ? [{ id: "6efba91e69a5b454ac0ae3497978fe1d", name: "Ludwigshafen am Rhein", title: "Ludwigshafen am Rhein", url: "https://www.ludwigshafen.de/" }]
+        : runNodeCli(["search_service", argB64Utf8(getParam("q"))]);
+    } else if (action === "refresh_service_map") {
+      payload = mockMode
+        ? { success: true, count: 2, source_url: "mock" }
+        : runNodeCli([...(getParam("url") ? ["refresh_service_map", getParam("url")] : ["refresh_service_map"])]);
     } else if (action === "search_hnr") {
       payload = mockMode
         ? [{ id: "__not_needed__", name: "House number selection not required" }]
@@ -138,12 +151,38 @@ const server = http.createServer(async (req, res) => {
       payload = { success: true };
     } else if (action === "save_settings") {
       const cfg = readConfig();
-      cfg.fetch_interval_hours = Number.parseInt(getParam("fetch_interval_hours"), 10) || 24;
-      try {
-        cfg.categories_filter = JSON.parse(getParam("categories_filter") || "[]");
-      } catch {
-        cfg.categories_filter = [];
+      const sk = getParam("service_key").trim();
+      if (sk !== "" && !/^[a-fA-F0-9]{32}$/.test(sk)) {
+        payload = { success: false, error: "Invalid service key", code: "service_key" };
+      } else {
+        cfg.service_key = sk === "" ? "" : sk.toLowerCase();
+        if (sk === "") {
+          cfg.location = {};
+        }
+        const fi = Number.parseInt(getParam("fetch_interval_hours"), 10) || 6;
+        cfg.fetch_interval_hours = Math.max(6, Math.min(168, fi));
+        cfg.fetch_fuzz_minutes = Number.parseInt(getParam("fetch_fuzz_minutes"), 10);
+        if (!Number.isFinite(cfg.fetch_fuzz_minutes)) cfg.fetch_fuzz_minutes = 30;
+        try {
+          cfg.categories_filter = JSON.parse(getParam("categories_filter") || "[]");
+        } catch {
+          cfg.categories_filter = [];
+        }
+        cfg.mqtt = cfg.mqtt ?? {};
+        cfg.mqtt.enabled = getParam("mqtt_enabled") === "1";
+        cfg.mqtt.use_loxberry_broker = getParam("mqtt_use_loxberry_broker") === "1";
+        cfg.mqtt.host = getParam("mqtt_host");
+        cfg.mqtt.port = Number.parseInt(getParam("mqtt_port"), 10) || 1883;
+        cfg.mqtt.user = getParam("mqtt_user");
+        cfg.mqtt.password = getParam("mqtt_password");
+        cfg.mqtt.topic_prefix = getParam("mqtt_topic_prefix") || "loxberry/abfallio";
+        cfg.mqtt.retain = getParam("mqtt_retain") === "1";
+        writeConfig(cfg);
+        payload = { success: true };
       }
+    } else if (action === "reset_location") {
+      const cfg = readConfig();
+      cfg.location = {};
       writeConfig(cfg);
       payload = { success: true };
     } else if (action === "download_json") {

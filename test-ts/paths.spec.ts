@@ -7,7 +7,7 @@ import { readMergedCronInstallProbe, resolvePaths } from "../src-ts/lib/paths.js
 describe("path resolution", () => {
   it("uses LBHOMEDIR plugin paths when available", () => {
     const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "lbpaths-"));
-    const pluginName = "wasteapiio";
+    const pluginName = "abfallio";
     const pluginConfigDir = path.join(tempRoot, "config", "plugins", pluginName);
     fs.mkdirSync(pluginConfigDir, { recursive: true });
 
@@ -30,7 +30,7 @@ describe("path resolution", () => {
 
   it("merged cron probe detects REPLACELB placeholder", () => {
     const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "lbcron-"));
-    const pluginName = "wasteapiio";
+    const pluginName = "abfallio";
     const cronDir = path.join(tempRoot, "system", "cron", "cron.d");
     fs.mkdirSync(cronDir, { recursive: true });
     const cronFile = path.join(cronDir, pluginName);
@@ -55,7 +55,7 @@ describe("path resolution", () => {
 
   it("merged cron probe reports no placeholder when cron is expanded", () => {
     const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "lbcron2-"));
-    const pluginName = "wasteapiio";
+    const pluginName = "abfallio";
     const cronDir = path.join(tempRoot, "system", "cron", "cron.d");
     fs.mkdirSync(cronDir, { recursive: true });
     const cronFile = path.join(cronDir, pluginName);

@@ -6,15 +6,15 @@
  * by the Loxone Virtual HTTP Input pattern engine.
  *
  * Endpunkte:
- *   GET /plugins/wasteapiio/loxone.php              -> Flat-Text aller Kategorien
- *   GET /plugins/wasteapiio/loxone.php?cat=Restabfall -> Days until next pickup for one category
- *   GET /plugins/wasteapiio/loxone.php?format=list   -> List of normalized category names
+ *   GET /plugins/abfallio/loxone.php              -> Flat-Text aller Kategorien
+ *   GET /plugins/abfallio/loxone.php?cat=Restabfall -> Days until next pickup for one category
+ *   GET /plugins/abfallio/loxone.php?format=list   -> List of normalized category names
  */
 
 require_once __DIR__ . '/waste_data_paths.php';
 
 $debug = isset($_GET['debug']);
-[$cache_file, $tried_paths] = wasteapiio_find_abfall_data_json();
+[$cache_file, $tried_paths] = abfallio_find_abfall_data_json();
 
 $lbhomedir = getenv('LBHOMEDIR') ?: (is_dir('/opt/loxberry') ? '/opt/loxberry' : '');
 $lbpdata = getenv('LBPDATA');

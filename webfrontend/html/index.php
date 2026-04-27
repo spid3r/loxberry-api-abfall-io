@@ -8,11 +8,11 @@
 
 require_once __DIR__ . '/waste_data_paths.php';
 
-[$cacheFile, $triedPaths] = wasteapiio_find_abfall_data_json();
-$pluginFolder = getenv('LBPPLUGINDIR') ?: 'wasteapiio';
+[$cacheFile, $triedPaths] = abfallio_find_abfall_data_json();
+$pluginFolder = getenv('LBPPLUGINDIR') ?: 'abfallio';
 
 $lbhomedir = getenv('LBHOMEDIR') ?: (is_dir('/opt/loxberry') ? '/opt/loxberry' : '');
-$lbplugindir = getenv('LBPPLUGINDIR') ?: 'wasteapiio';
+$lbplugindir = getenv('LBPPLUGINDIR') ?: 'abfallio';
 if ($lbhomedir) {
     $plugin_lang_dir = $lbhomedir . '/templates/plugins/' . $lbplugindir . '/lang';
     if (!is_dir($plugin_lang_dir)) {
@@ -40,7 +40,7 @@ header('Cache-Control: public, max-age=300');
 
 if ($serveJson) {
     header('Content-Type: application/json; charset=utf-8');
-    header('X-Wasteapiio-Public-Index: 2');
+    header('X-Abfallio-Public-Index: 2');
     if ($cacheFile && is_readable($cacheFile)) {
         $raw = file_get_contents($cacheFile);
         $decoded = json_decode((string) $raw, true);

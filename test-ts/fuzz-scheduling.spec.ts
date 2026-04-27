@@ -6,8 +6,8 @@ import { shouldFetch } from "../src-ts/lib/abfall-service.js";
 import type { PluginConfig, WasteData } from "../src-ts/lib/types.js";
 
 function setupFakeLoxberry(): { tempRoot: string; restore: () => void; cacheFile: string } {
-  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "wasteapiio-fuzz-"));
-  const pluginName = "wasteapiio";
+  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "abfallio-fuzz-"));
+  const pluginName = "abfallio";
   const dataDir = path.join(tempRoot, "data", "plugins", pluginName);
   const cfgDir = path.join(tempRoot, "config", "plugins", pluginName);
   fs.mkdirSync(dataDir, { recursive: true });
@@ -42,12 +42,21 @@ function writeCache(cacheFile: string, partial: Partial<WasteData>): void {
   fs.writeFileSync(cacheFile, JSON.stringify(data));
 }
 
+/** shouldFetch() only runs when a service key and street id are set (no default region). */
+function withSchedulerPrereq(cfg: PluginConfig): PluginConfig {
+  return {
+    service_key: "test-fuzz-service-key",
+    location: { f_id_strasse: "1" },
+    ...cfg,
+  };
+}
+
 describe("fetch scheduling with fuzz factor", () => {
   it("forces a fetch regardless of cache when force=true", () => {
     const env = setupFakeLoxberry();
     try {
       writeCache(env.cacheFile, { timestamp: "2099-01-01 00:00:00" });
-      const cfg: PluginConfig = { fetch_interval_hours: 24, fetch_fuzz_minutes: 30 };
+      const cfg = withSchedulerPrereq({ fetch_interval_hours: 24, fetch_fuzz_minutes: 30 });
       expect(shouldFetch(cfg, true)).to.equal(true);
     } finally {
       env.restore();
@@ -57,7 +66,7 @@ describe("fetch scheduling with fuzz factor", () => {
   it("fetches when no cache file exists", () => {
     const env = setupFakeLoxberry();
     try {
-      const cfg: PluginConfig = { fetch_interval_hours: 24, fetch_fuzz_minutes: 30 };
+      const cfg = withSchedulerPrereq({ fetch_interval_hours: 24, fetch_fuzz_minutes: 30 });
       expect(shouldFetch(cfg, false)).to.equal(true);
     } finally {
       env.restore();
@@ -71,7 +80,7 @@ describe("fetch scheduling with fuzz factor", () => {
         timestamp: "2026-04-26 06:00:00",
         next_fetch_offset_minutes: 25,
       });
-      const cfg: PluginConfig = { fetch_interval_hours: 24, fetch_fuzz_minutes: 30 };
+      const cfg = withSchedulerPrereq({ fetch_interval_hours: 24, fetch_fuzz_minutes: 30 });
       // 24h after the fetch but BEFORE the +25 min fuzz offset => still skip.
       const tooEarly = new Date("2026-04-27T06:10:00");
       expect(shouldFetch(cfg, false, tooEarly)).to.equal(false);
@@ -90,7 +99,7 @@ describe("fetch scheduling with fuzz factor", () => {
         timestamp: "2026-04-26 06:00:00",
         next_fetch_offset_minutes: -20,
       });
-      const cfg: PluginConfig = { fetch_interval_hours: 24, fetch_fuzz_minutes: 30 };
+      const cfg = withSchedulerPrereq({ fetch_interval_hours: 24, fetch_fuzz_minutes: 30 });
       // 23h 50min after last fetch: still before negative offset => skip.
       const stillEarly = new Date("2026-04-27T05:30:00");
       expect(shouldFetch(cfg, false, stillEarly)).to.equal(false);
@@ -109,7 +118,7 @@ describe("fetch scheduling with fuzz factor", () => {
         timestamp: "2026-04-26 06:00:00",
         next_fetch_offset_minutes: 0,
       });
-      const cfg: PluginConfig = { fetch_interval_hours: 24 };
+      const cfg = withSchedulerPrereq({ fetch_interval_hours: 24 });
       const exactInterval = new Date("2026-04-27T06:00:00");
       expect(shouldFetch(cfg, false, exactInterval)).to.equal(true);
     } finally {

@@ -29,23 +29,23 @@ describe("MQTT publisher", () => {
   });
 
   it("builds one set of topics per category plus state/last_fetch/location", () => {
-    const messages = buildPublishMessages("loxberry/wasteapiio", sampleData);
+    const messages = buildPublishMessages("loxberry/abfallio", sampleData);
     const topics = messages.map((m) => m.topic);
-    expect(topics).to.include("loxberry/wasteapiio/state");
-    expect(topics).to.include("loxberry/wasteapiio/last_fetch");
-    expect(topics).to.include("loxberry/wasteapiio/location");
-    expect(topics).to.include("loxberry/wasteapiio/categories_count");
-    expect(topics).to.include("loxberry/wasteapiio/categories/restabfall/days");
-    expect(topics).to.include("loxberry/wasteapiio/categories/restabfall/date");
-    expect(topics).to.include("loxberry/wasteapiio/categories/restabfall/weekday");
-    expect(topics).to.include("loxberry/wasteapiio/categories/restabfall/weekday_num");
-    expect(topics).to.include("loxberry/wasteapiio/categories/bio_tonne/days");
+    expect(topics).to.include("loxberry/abfallio/state");
+    expect(topics).to.include("loxberry/abfallio/last_fetch");
+    expect(topics).to.include("loxberry/abfallio/location");
+    expect(topics).to.include("loxberry/abfallio/categories_count");
+    expect(topics).to.include("loxberry/abfallio/categories/restabfall/days");
+    expect(topics).to.include("loxberry/abfallio/categories/restabfall/date");
+    expect(topics).to.include("loxberry/abfallio/categories/restabfall/weekday");
+    expect(topics).to.include("loxberry/abfallio/categories/restabfall/weekday_num");
+    expect(topics).to.include("loxberry/abfallio/categories/bio_tonne/days");
 
-    const daysMsg = messages.find((m) => m.topic === "loxberry/wasteapiio/categories/restabfall/days");
+    const daysMsg = messages.find((m) => m.topic === "loxberry/abfallio/categories/restabfall/days");
     expect(daysMsg?.payload).to.equal("3");
-    const wnum = messages.find((m) => m.topic === "loxberry/wasteapiio/categories/restabfall/weekday_num");
+    const wnum = messages.find((m) => m.topic === "loxberry/abfallio/categories/restabfall/weekday_num");
     expect(wnum?.payload).to.equal("3");
-    const stateMsg = messages.find((m) => m.topic === "loxberry/wasteapiio/state");
+    const stateMsg = messages.find((m) => m.topic === "loxberry/abfallio/state");
     expect(stateMsg).to.exist;
     expect(JSON.parse(stateMsg!.payload).standort).to.equal("Main Street 1");
   });
@@ -67,7 +67,7 @@ describe("MQTT publisher", () => {
         enabled: true,
         host: "broker.example",
         port: 18883,
-        topic_prefix: "test/wasteapiio",
+        topic_prefix: "test/abfallio",
         retain: false,
         use_loxberry_broker: false,
       },
@@ -106,7 +106,7 @@ describe("MQTT publisher", () => {
   });
 
   it("auto-detects LoxBerry broker credentials from cred.json", () => {
-    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "wasteapiio-mqtt-"));
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "abfallio-mqtt-"));
     const credDir = path.join(tmp, "system", "storage", "mqtt");
     fs.mkdirSync(credDir, { recursive: true });
     fs.writeFileSync(
@@ -128,7 +128,7 @@ describe("MQTT publisher", () => {
   });
 
   it("auto-detects LoxBerry broker credentials from general.json (LoxBerry 3 layout)", () => {
-    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "wasteapiio-mqtt2-"));
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "abfallio-mqtt2-"));
     const cfgDir = path.join(tmp, "config", "system");
     fs.mkdirSync(cfgDir, { recursive: true });
     fs.writeFileSync(
@@ -154,7 +154,7 @@ describe("MQTT publisher", () => {
   });
 
   it("splits combined host:port broker address", () => {
-    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "wasteapiio-mqtt3-"));
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "abfallio-mqtt3-"));
     const cfgDir = path.join(tmp, "config", "system");
     fs.mkdirSync(cfgDir, { recursive: true });
     fs.writeFileSync(

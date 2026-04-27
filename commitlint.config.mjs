@@ -7,4 +7,8 @@
  */
 export default {
   extends: ["@commitlint/config-conventional"],
+  rules: {
+    // Default 100 is tight for bullet lists with paths and backticks; keep headers strict.
+    "body-max-line-length": [2, "always", 120],
+  },
 };

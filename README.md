@@ -7,6 +7,12 @@ LoxBerry 3 plugin that retrieves waste-collection schedules from
 [`api.abfall.io`](https://api.abfall.io/) and exposes them as JSON, flat-text
 (Loxone) and MQTT topics.
 
+**Disclaimer (read this):** This project is **not** official,
+**not** endorsed by the api.abfall.io / AbfallPlus operators, and **there is no support obligation** from them or from
+the maintainers. It is a **community best-effort** tool using **publicly accessible** HTTP usage, with a **minimum
+6-hour** interval between scheduled fetches to avoid placing unnecessary load on upstream servers. The service may
+**change or stop at any time**. Full text: **[DISCLAIMER.md](./DISCLAIMER.md)** (German and English).
+
 ## Features
 
 - **Admin UI in German and English** (plugin strings, help texts, and the in-page quick guide). The data is for
@@ -17,7 +23,7 @@ LoxBerry 3 plugin that retrieves waste-collection schedules from
   a short “how to use” block for new users. In the real appliance the page is **embedded in the LoxBerry shell**
   (like other plugins); `npm run dev:ui` serves a **standalone** page for local work.
 - Street and house-number lookup against `api.abfall.io`
-- Scheduled background fetch via cron with a configurable **fuzz factor**
+- Scheduled background fetch via cron: **minimum fetch interval 6 hours** (configurable upward to 168 hours) plus a **fuzz factor**
   (random ± minutes, default 30) so the API is not hit on the same minute by
   every LoxBerry running this plugin
 - JSON from the admin/ajax API (`htmlauth/ajax.php`); optional **JSON snapshot**
@@ -39,8 +45,38 @@ This plugin has **a single data path**: the public service [`api.abfall.io`](htt
 municipal waste sites. There is **no alternate backend** to pick in the UI. The status line **Data source** simply
 names that service (it is *not* a mode selector). Schedules are downloaded as a **web calendar (ICS / iCal)** in
 the background, then normalised; you do not manage ICS files yourself. You do **not** need a personal account
-on api.abfall.io. An optional `service_key` in config only refers to a **public region** identifier; leave it empty
-unless your municipality documents a different one.
+on api.abfall.io. Each municipality or provider on abfall.io has its own **32-character hex service key**
+(the same as on their “Abfuhrtermine” web app). **You must choose your region** on the **Location** tab first
+(autocomplete list or expert key), then **Save region & settings**; there is **no hidden default city** — until a
+key is saved, street search and fetch are disabled.
+You can read the key from the browser’s **Network** tab when triggering an **ICS export** on your local waste
+schedule page, or use community docs (e.g. Home Assistant’s [abfall.io source
+notes](https://github.com/mampfes/hacs_waste_collection_schedule/blob/master/doc/source/abfall_io.md)). Then search
+your street on the same **Location** tab (below the region block).
+
+## Which municipalities and providers are supported in the UI?
+
+**Scope of this plugin:** only waste schedules that are reachable via
+[`api.abfall.io`](https://api.abfall.io/) (same public API that many local “Abfuhr / Abfall”
+websites use). There is **no** single official “all Germany” API from abfall.io; the plugin
+therefore does **not** know every city by magic.
+
+**What the admin UI actually lists:** on the **Standort / Location** tab (with the region search) you will find a
+block *“Which regions work?”* (collapsible) with **every `service` name** in the current autocomplete
+data file — that is the explicit answer to *“which municipalities work in this list”*.
+
+- **Source of the names:** a community-curated list aligned with the Home Assistant
+  [`waste_collection_schedule`](https://github.com/mampfes/hacs_waste_collection_schedule) /
+  *AbfallIO* `SERVICE_MAP` (and the `AbfallIO.py` file the plugin can download when you
+  use **“Update region list online”**).
+- **Shipped file:** `data/abfallio-service-map.json` in the plugin tree (bundled in the ZIP).
+- **Override after an online refresh:** the updated copy in the LoxBerry **plugin data**
+  directory: `<LBHOMEDIR>/data/plugins/<FOLDER>/abfallio-service-map.json` (takes
+  precedence if present).
+- **Your town not in the list?** The operator can still be on abfall.io — use the **expert**
+  32-hex *service key* and then pick your address on the *Location* tab. Operators that do
+  **not** use abfall.io are **out of scope** (different backends would need separate
+  integrations, like the many other *sources* in the Home Assistant project above).
 
 ## Public help page and languages
 
@@ -55,14 +91,13 @@ If you open `plugins/<folder>/index.php` in a browser, you get a **short, transl
 1. Download the latest plugin ZIP from the
    [GitHub releases page](https://github.com/spid3r/loxberry-api-abfall-io/releases).
 2. Install it in LoxBerry under *System ▸ Plugins*.
-3. Open the plugin page, search your street, save the location and press
-   *Fetch now* to test.
+3. Open the plugin, **Location** — pick your **waste region** (or enter a service key) and **Save region & settings**;
+   then search your street and save, *Status* — **Fetch now** to test.
 
-**First time (absolute beginner):** (1) *Location* — find your street and **Save**. (2) *Status* — **Fetch now**
-and wait for dates in the table. (3) Only then use *Settings* for interval, category filter, MQTT, or the Loxone/JSON
-URLs. If something fails, read the *Log* tab. Weekday **names** follow the plugin language; **wochentag_num** in JSON
-is **1 = Monday … 7 = Sunday** (Loxone-friendly). The *Status* data card **Data source** is informational only; it
-does not change behaviour.
+**First time (absolute beginner):** (1) *Location* — region + save (same action stores interval/MQTT defaults too). (2) same tab — street, save. (3) *Status* —
+**Fetch now** and wait for dates. (4) Optional: *Settings* for interval (≥6 h), filter, MQTT, Loxone/JSON. If
+something fails, read the *Log* tab. The *Status* data card **Data source** is informational only. See
+[DISCLAIMER.md](./DISCLAIMER.md) for limitations and “no support” wording.
 
 ### Local development checks
 
@@ -95,13 +130,14 @@ node bin/fetch.cjs --force
 
 ## Configuration
 
-### 1) Location
+### 1) Location (region, then address)
 
 In the plugin UI open the *Standort* / *Location* tab:
 
-- Search a street (min. 3 characters)
+- Choose your **waste region** (autocomplete) or the expert **service key**, then **Save region & settings**
+- **Then** search a street (min. 3 characters)
 - Pick a house number if the API requires one
-- Save
+- **Save location**
 
 ### 2) Fetch interval & fuzz factor
 
@@ -135,19 +171,19 @@ After every successful fetch the plugin publishes (retained, QoS 1):
 <prefix>/categories/<slug>/category         # original category label
 ```
 
-Default prefix is `loxberry/wasteapiio`. German umlauts in category names are
+Default prefix is `loxberry/abfallio`. German umlauts in category names are
 folded to ASCII (`Grünabfall` → `gruenabfall`).
 
 ### 4) Loxone Miniserver
 
 Add a Virtual HTTP Input pointing at:
 
-- `http://<loxberry-ip>/plugins/wasteapiio/loxone.php` — flat output for all categories
-- `http://<loxberry-ip>/plugins/wasteapiio/loxone.php?cat=<category>` — single category
-- `http://<loxberry-ip>/plugins/wasteapiio/loxone.php?format=list` — category list
+- `http://<loxberry-ip>/plugins/abfallio/loxone.php` — flat output for all categories
+- `http://<loxberry-ip>/plugins/abfallio/loxone.php?cat=<category>` — single category
+- `http://<loxberry-ip>/plugins/abfallio/loxone.php?format=list` — category list
 
 **JSON snapshot (optional):**  
-`http://<loxberry-ip>/plugins/wasteapiio/index.php?format=json` — same cache file as above, for tools that want JSON.  
+`http://<loxberry-ip>/plugins/abfallio/index.php?format=json` — same cache file as above, for tools that want JSON.  
 `.../index.php?view=html` — short help page in **DE** or **EN**; use `?lang=de` or `?lang=en`.
   Normal browsers also get HTML if `text/html` is in `Accept` and `?format=json` is not used.
 
@@ -236,7 +272,7 @@ This runs `build:icons` (resizes the artwork under `icons/` to the four
 LoxBerry sizes, writes `webfrontend/html/icon_64.png` for the management UI),
 `build` (esbuild bundles for `bin/`), then `build-release` (ZIP).
 
-The artifact lands in `dist/loxberry-plugin-wasteapiio-<version>.zip` and is
+The artifact lands in `dist/loxberry-plugin-abfallio-<version>.zip` and is
 the file you upload to LoxBerry. The build excludes `src-ts/`, `test-ts/`,
 `scripts/`, `node_modules/`, dotfiles and the `.playwright-mcp/` working
 folder.
@@ -285,7 +321,7 @@ npm run lb:cli -- plugins deploy --project .   # after npm run release:zip — s
 npm run plugins:uninstall
 ```
 
-`npm run plugins:uninstall` calls `plugins uninstall --name wasteapiio`. The
+`npm run plugins:uninstall` calls `plugins uninstall --name abfallio`. The
 **loxberry-client** CLI resolves a **folder name** to the **pid (md5)** via `plugins list`
 when `--name` is not 32 hex characters — you do not need a separate script.
 
@@ -298,7 +334,7 @@ For a full release-candidate gate there is an additional Playwright suite at
 LoxBerry appliance:
 
 1. Builds a fresh release ZIP.
-2. Uninstalls any previous version of `wasteapiio` from the appliance.
+2. Uninstalls any previous version of `abfallio` from the appliance.
 3. Uploads + installs the freshly built ZIP via the `loxberry-client` CLI.
 4. Drives the admin UI: searches a street, picks a house number if required,
    saves the location (auto-fetch runs from the same flow).
@@ -337,12 +373,12 @@ Optional tuning (set in the environment or `.env` when using `dotenv-cli`):
   `.env` if you do not want a window. CI is always headless.
 - `E2E_SKIP_UNINSTALL=1` — skip the uninstall step (useful to avoid
   back-to-back install races; you already get a *fresh* config only after a
-  full uninstall+install of `wasteapiio`).
+  full uninstall+install of `abfallio`).
 - The underlying LoxBerry API uses **`pid` = plugin MD5** (same as the web UI);
   the test harness passes that value, **not** the folder name, to
   `plugins uninstall --name …`.
 - Uninstall is **verified** by re-querying `loxberry-client plugins list` until
-  `wasteapiio` is gone (not only the CLI exit code). Tune with:
+  `abfallio` is gone (not only the CLI exit code). Tune with:
   `E2E_UNINSTALL_CMD_ATTEMPTS` (default `3`), `E2E_UNINSTALL_WAIT_MS` (default
   `120000` per attempt), `E2E_UNINSTALL_POLL_MS` (default `750` — how often
   `plugins list` is re-checked; the first check is immediate, then the delay).
@@ -357,7 +393,7 @@ Optional tuning (set in the environment or `.env` when using `dotenv-cli`):
   between attempts.
 - `E2E_INSTALL_WAIT_MS` (default `120000`) / `E2E_INSTALL_POLL_MS` (default
   `750`) — how long the suite **polls `plugins list`** after a successful
-  upload until the `wasteapiio` row appears (LoxBerry can be slower than the
+  upload until the `abfallio` row appears (LoxBerry can be slower than the
   CLI exit code; first `plugins list` call is immediate, then the poll interval).
 
 The first run downloads Playwright's Chromium build (~120 MB) into your local
@@ -380,29 +416,29 @@ Playwright cache.
 LoxBerry can install a plugin from a direct download URL. Use the **asset file** on a release, not the `Source code (zip)` download.
 
 - Open the [GitHub releases page](https://github.com/spid3r/loxberry-api-abfall-io/releases) and pick a version, or use **Latest** for the current release.
-- The attachable file is named like `loxberry-plugin-wasteapiio-1.2.3.zip` (exact name is shown on the release).
+- The attachable file is named like `loxberry-plugin-abfallio-1.2.3.zip` (exact name is shown on the release).
 - A stable per-release URL has the form:
 
-  `https://github.com/OWNER/REPO/releases/download/vVERSION/loxberry-plugin-wasteapiio-VERSION.zip`
+  `https://github.com/OWNER/REPO/releases/download/vVERSION/loxberry-plugin-abfallio-VERSION.zip`
 
   Example (replace with your real tag and file name as shown on the release):
 
-  `https://github.com/spid3r/loxberry-api-abfall-io/releases/download/v1.0.0/loxberry-plugin-wasteapiio-1.0.0.zip`
+  `https://github.com/spid3r/loxberry-api-abfall-io/releases/download/v1.0.0/loxberry-plugin-abfallio-1.0.0.zip`
 
 Paste that URL into **LoxBerry Admin → Plugin Management** where the appliance asks for a plugin URL. The browser’s “Copy link” on the release asset is usually the right link (must return the raw ZIP, not an HTML page).
 
-**Legacy `abfallu` install:** if you still have the old `abfallu` plugin folder, uninstall it before installing `wasteapiio` so you do not run two copies of the same app.
+**Legacy `abfallu` install:** if you still have the old `abfallu` plugin folder, uninstall it before installing `abfallio` so you do not run two copies of the same app.
 
 ## LoxBerry email: “Unknown Plugin: Error while extracting from plugin archive” (or *“The PID does not exist”*)
 
 That notification comes from the appliance when a **particular** install attempt fails. It is **not** always the final outcome if you immediately tried again. Common cases:
 
-- **“Browse” / file upload in Plugin Management:** the [LoxBerry FAQ for this exact error](https://wiki.loxberry.de/loxberry_english/english_faq_and_knowledge_base/plugin_cannot_be_installed) explains that using the **file picker** can send a **corrupted stream** to the box, so unzip fails. **Prefer “install from URL”** (paste the [GitHub release asset](#install-from-a-github-release-url-loxberry-plugin-management) link so LoxBerry downloads the ZIP itself) or try another browser; the same `loxberry-plugin-wasteapiio-….zip` file often works when the appliance fetches it by URL.
+- **“Browse” / file upload in Plugin Management:** the [LoxBerry FAQ for this exact error](https://wiki.loxberry.de/loxberry_english/english_faq_and_knowledge_base/plugin_cannot_be_installed) explains that using the **file picker** can send a **corrupted stream** to the box, so unzip fails. **Prefer “install from URL”** (paste the [GitHub release asset](#install-from-a-github-release-url-loxberry-plugin-management) link so LoxBerry downloads the ZIP itself) or try another browser; the same `loxberry-plugin-abfallio-….zip` file often works when the appliance fetches it by URL.
 - **Only one install at a time:** if an upload/URL install started while a previous one was still extracting, LoxBerry can report errors and email you even though a later attempt succeeds. Wait until Plugin Management is idle, then install once.
 - **“Unknown Plugin: The PID does not exist”** often means the installer referred to a plugin process ID that LoxBerry had already cleared (race between uninstall/reinstall/parallel steps). The same mitigations as below apply: increase settle time between uninstall and install, avoid parallel installs, or set `E2E_SKIP_UNINSTALL=1` while iterating and upgrade manually once the box is quiet.
 - **Automated or repeated tests:** the destructive E2E test or `plugins:upload:latest` in a loop can trigger overlapping or back-to-back installs. The suite now **polls the plugin list** after `plugins uninstall` so a slow UI does not look like a success; you can still raise `E2E_UNINSTALL_WAIT_MS` / `E2E_POST_UNINSTALL_MS` on a slow host, or use `E2E_SKIP_UNINSTALL=1` for in-place upgrade tests.
 - **Wrong URL:** installing from a GitHub **HTML** page or a `Source code` zip instead of the **release asset** can fail; use the `releases/download/.../loxberry-plugin-....zip` link from the [Releases](https://github.com/spid3r/loxberry-api-abfall-io/releases) page.
-- **Two plugins (`abfallu` + `wasteapiio`):** remove the legacy one to avoid confusion; only `wasteapiio` is the current package name in `plugin.cfg`.
+- **Two plugins (`abfallu` + `abfallio`):** remove the legacy one to avoid confusion; only `abfallio` is the current package name in `plugin.cfg`.
 
 If the latest install in the UI shows the plugin as installed and the admin UI works, the zip content is valid — treat the email as a failed attempt, not necessarily a broken build.
 
@@ -415,7 +451,7 @@ This repository uses [semantic-release](https://github.com/semantic-release/sema
 - Pushes to `main` run `.github/workflows/release.yml`, which (via semantic-release) may:
   - bump `package.json` and `plugin.cfg`
   - regenerate `CHANGELOG.md`
-  - create a Git tag and a **GitHub Release** with the **plugin ZIP** attached (`dist/loxberry-plugin-wasteapiio-*.zip`)
+  - create a Git tag and a **GitHub Release** with the **plugin ZIP** attached (`dist/loxberry-plugin-abfallio-*.zip`)
 - It does **not** publish to npm.
 
 [Dependabot](.github/dependabot.yml) can suggest updates for GitHub Actions and npm packages; merge those PRs to stay current.
@@ -424,9 +460,9 @@ This repository uses [semantic-release](https://github.com/semantic-release/sema
 
 1. **Enable Actions** in the repository settings (if GitHub does not run workflows yet).
 2. **CI** — every push/PR runs tests and a release-ZIP build; no secrets are required. Do not commit `.env` or LoxBerry credentials (they are gitignored).
-3. **Releases** — merge to `default` / `main` with [Conventional Commits](https://www.conventionalcommits.org/) (e.g. `feat:`, `fix:`, `perf:`) so `semantic-release` can compute a version, create a **Git tag** and a **GitHub Release**, and upload the `loxberry-plugin-wasteapiio-*.zip` asset. The workflow uses the built-in `GITHUB_TOKEN` only; no personal access token and no npm publish.
-4. The **install URL** for LoxBerry “install from URL” is the *asset* link on the release, e.g. `https://github.com/ORG/REPO/releases/download/vX.Y.Z/loxberry-plugin-wasteapiio-X.Y.Z.zip` — not the “Source code” zip.
-5. **Plugin list icon** — after a fix that adds `ICON=icon_64.png` and proper `icons/`, **reinstall or update the plugin** on the LoxBerry so the core can copy the new `icons/icon_*.png` set into `/system/images/icons/wasteapiio/`.
+3. **Releases** — merge to `default` / `main` with [Conventional Commits](https://www.conventionalcommits.org/) (e.g. `feat:`, `fix:`, `perf:`) so `semantic-release` can compute a version, create a **Git tag** and a **GitHub Release**, and upload the `loxberry-plugin-abfallio-*.zip` asset. The workflow uses the built-in `GITHUB_TOKEN` only; no personal access token and no npm publish.
+4. The **install URL** for LoxBerry “install from URL” is the *asset* link on the release, e.g. `https://github.com/ORG/REPO/releases/download/vX.Y.Z/loxberry-plugin-abfallio-X.Y.Z.zip` — not the “Source code” zip.
+5. **Plugin list icon** — after a fix that adds `ICON=icon_64.png` and proper `icons/`, **reinstall or update the plugin** on the LoxBerry so the core can copy the new `icons/icon_*.png` set into `/system/images/icons/abfallio/`.
 
 Local preview:
 

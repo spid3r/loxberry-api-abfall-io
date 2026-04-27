@@ -4,7 +4,7 @@
  *
  * Responsibilities:
  *   1. Refuse to run unless the user opts in via --yes-i-am-developer
- *      (or by setting WASTEAPIIO_ALLOW_DESTRUCTIVE=1).
+ *      (or by setting ABFALLIO_ALLOW_DESTRUCTIVE=1).
  *   2. Make sure Playwright's chromium browser is installed locally; if not,
  *      run `npx playwright install chromium` once.
  *   3. Set E2E_LIVE=1 in the spawned environment.
@@ -28,14 +28,14 @@ const repoRoot = path.resolve(__dirname, "..");
 const argv = process.argv.slice(2);
 const allowFlag =
   argv.includes("--yes-i-am-developer") ||
-  process.env.WASTEAPIIO_ALLOW_DESTRUCTIVE === "1";
+  process.env.ABFALLIO_ALLOW_DESTRUCTIVE === "1";
 
 if (!allowFlag) {
   process.stderr.write(
     [
       "",
       "WARNING: this is a destructive end-to-end test.",
-      "It will UNINSTALL and REINSTALL the wasteapiio plugin on the LoxBerry",
+      "It will UNINSTALL and REINSTALL the abfallio plugin on the LoxBerry",
       "instance defined by LOXBERRY_BASE_URL in your .env file.",
       "",
       "To proceed, either:",
@@ -46,7 +46,7 @@ if (!allowFlag) {
       "",
       "    npm run test:e2e:full -- --yes-i-am-developer",
       "",
-      "or set WASTEAPIIO_ALLOW_DESTRUCTIVE=1 in your environment first.",
+      "or set ABFALLIO_ALLOW_DESTRUCTIVE=1 in your environment first.",
       "",
     ].join("\n"),
   );
