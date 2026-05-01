@@ -1,3 +1,10 @@
+# [1.2.0](https://github.com/spid3r/loxberry-api-abfall-io/compare/v1.1.0...v1.2.0) (2026-05-01)
+
+
+### Features
+
+* **release:** automate DokuWiki generation for releases ([c6efdae](https://github.com/spid3r/loxberry-api-abfall-io/commit/c6efdaeee0eee2a10afa747881c07b5484f264f4))
+
 # [1.1.0](https://github.com/spid3r/loxberry-api-abfall-io/compare/v1.0.2...v1.1.0) (2026-04-27)
 
 

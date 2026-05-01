@@ -1,6 +1,10 @@
 ﻿====== Abfall IO / Abfallabholung (api.abfall.io) ======
 
 ++++ Version History |
+**Version 1.2.0**
+
+  * **release:** automate DokuWiki generation for releases (c6efdae)
+
 **Version 1.1.0**
 
   * migrate plugin to abfall.io naming and service map (499b7d5)
