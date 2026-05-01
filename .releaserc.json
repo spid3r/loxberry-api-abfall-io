@@ -12,7 +12,7 @@
     [
       "@semantic-release/exec",
       {
-        "prepareCmd": "node ./scripts/prepare-release.mjs ${nextRelease.version} && npm run release:zip"
+        "prepareCmd": "node ./scripts/prepare-release.mjs ${nextRelease.version} && npm run wiki:build && npm run release:zip"
       }
     ],
     [
@@ -29,7 +29,7 @@
     [
       "@semantic-release/git",
       {
-        "assets": ["CHANGELOG.md", "plugin.cfg", "package.json"],
+        "assets": ["CHANGELOG.md", "plugin.cfg", "package.json", "docs/WIKI_DOKUWIKI_START.txt"],
         "message": "chore(release): ${nextRelease.version} [skip ci]"
       }
     ]

@@ -44,9 +44,9 @@ jobs:
             npx commitlint --from=${{ github.event.before }} --to=${{ github.event.after }} --verbose
           fi
 
-      - name: Commitlint (PR range)
+      - name: Commitlint (PR head commit)
         if: github.event_name == 'pull_request'
-        run: npx commitlint --from=${{ github.event.pull_request.base.sha }} --to=${{ github.event.pull_request.head.sha }} --verbose
+        run: npx commitlint --last --verbose
 
       - name: Typecheck
         run: npm run typecheck
@@ -62,6 +62,9 @@ jobs:
 
       - name: Verify ZIP contents (no dev junk, required paths)
         run: npm run verify:zip
+
+      - name: Generate and validate DokuWiki document
+        run: npm run wiki:build
 
       - name: Install Playwright Chromium (for test-e2e load/skip)
         run: npx playwright install --with-deps chromium

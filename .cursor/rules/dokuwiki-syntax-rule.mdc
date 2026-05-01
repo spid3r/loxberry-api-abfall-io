@@ -1,0 +1,31 @@
+﻿---
+description: LoxBerry DokuWiki syntax guardrails
+globs:
+  - docs/WIKI_DOKUWIKI_START.txt
+  - docs/templates/*.tpl
+alwaysApply: true
+---
+
+LoxBerry Wiki pages are DokuWiki, not Markdown.
+
+Required syntax rules:
+- Headings only with `=` markers (for example `===== Abschnitt =====`).
+- Links only as `[[url|text]]`.
+- For parser-sensitive URL lines (especially `http://...`) prefer `%%...%%` literal blocks.
+- Bullet list items begin with two spaces: `  * item`.
+- Keep Version History inside `++++ Version History |` / closing `++++`.
+
+Forbidden syntax:
+- Markdown headings (`#`, `##`, ...)
+- Triple-backtick fenced blocks
+- Markdown links (`[text](url)`)
+
+Checklist before finalizing wiki text:
+1) No unresolved template placeholders (`{{...}}`).
+2) No raw `http://` URL in normal prose where DokuWiki could parse `//` as italic.
+3) Keep canonical sections present:
+   - Überblick
+   - Unterstützte Regionen
+   - Integration über MQTT
+   - Integration über HTTP
+   - Fragen und Fehler melden
