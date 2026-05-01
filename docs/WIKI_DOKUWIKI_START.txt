@@ -1,6 +1,10 @@
 ﻿====== Abfall IO / Abfallabholung (api.abfall.io) ======
 
 ++++ Version History |
+**Version 1.3.0**
+
+  * **docs:** add live LoxBerry screenshots to wiki output (3d69e32)
+
 **Version 1.2.0**
 
   * **release:** automate DokuWiki generation for releases (c6efdae)
@@ -16,10 +20,6 @@
 **Version 1.0.1**
 
   * **deps:** bump up versions (58ee5fc)
-
-**Version 1.0.0**
-
-  * list plugin zip with unzip on linux ci (2c45318)
 
 Ältere Releases, Änderungsnotizen sowie die **ZIP‑Pakete** findest du bei **[[https://github.com/spid3r/loxberry-api-abfall-io/releases|GitHub Releases]]**. Der **Quelltext** liegt im **[[https://github.com/spid3r/loxberry-api-abfall-io|Repository]]**.
 

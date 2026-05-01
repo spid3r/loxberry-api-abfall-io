@@ -1,3 +1,10 @@
+# [1.3.0](https://github.com/spid3r/loxberry-api-abfall-io/compare/v1.2.0...v1.3.0) (2026-05-01)
+
+
+### Features
+
+* **docs:** add live LoxBerry screenshots to wiki output ([3d69e32](https://github.com/spid3r/loxberry-api-abfall-io/commit/3d69e3291939b5f059789e85605bf7ceea62afe4))
+
 # [1.2.0](https://github.com/spid3r/loxberry-api-abfall-io/compare/v1.1.0...v1.2.0) (2026-05-01)
 
 
