@@ -10,6 +10,7 @@ export const REQUIRED_HEADINGS = [
   "====== Abfall IO / Abfallabholung (api.abfall.io) ======",
   "===== Überblick =====",
   "===== Unterstützte Regionen (aus Service-Map) =====",
+  "===== Screenshots (deutsche Oberfläche) =====",
   "===== Integration über MQTT =====",
   "===== Integration über HTTP (ohne MQTT) =====",
   "===== Fragen und Fehler melden =====",

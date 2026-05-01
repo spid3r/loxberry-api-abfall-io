@@ -20,8 +20,8 @@ the maintainers. It is a **community best-effort** tool using **publicly accessi
   Language is chosen from the **Language** dropdown (or `?lang=de` / `?lang=en` on the first request; then cookie, plugin
   `config/abfall.json`, LoxBerry system language, and `Accept-Language`). If nothing matches, **German** is the default.
   The **Status** tab starts with
-  a short “how to use” block for new users. In the real appliance the page is **embedded in the LoxBerry shell**
-  (like other plugins); `npm run dev:ui` serves a **standalone** page for local work.
+  a short “how to use” block for new users. In normal operation the page is **embedded in the LoxBerry shell**
+  (like other plugins).
 - Street and house-number lookup against `api.abfall.io`
 - Scheduled background fetch via cron: **minimum fetch interval 6 hours** (configurable upward to 168 hours) plus a **fuzz factor**
   (random ± minutes, default 30) so the API is not hit on the same minute by
@@ -252,12 +252,10 @@ scripts/       build, packaging and dev tooling
 .github/       CI + semantic-release workflows
 ```
 
-## Local UI development
+## Local UI checks
 
-```bash
-npm run dev:ui          # serves the PHP UI against the local Node CLI
-npm run dev:ui:mock     # serves the UI with mocked AJAX responses
-```
+UI checks and screenshots are performed against a real configured LoxBerry appliance (see `.env`)
+via Playwright (`npm run wiki:screenshots` and `npm run wiki:screenshots:watch`).
 
 The dev server listens on `http://localhost:8080`.
 

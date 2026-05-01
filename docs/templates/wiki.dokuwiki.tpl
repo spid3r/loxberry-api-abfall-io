@@ -68,6 +68,10 @@ Aktueller Stand: **{{SUPPORTED_REGION_COUNT}} Regionen** (Quelle: ''data/abfalli
 
 {{SUPPORTED_REGIONS_LIST}}
 
+===== Screenshots (deutsche Oberfläche) =====
+
+{{SCREENSHOT_GALLERY}}
+
 
 ===== Integration über MQTT =====
 

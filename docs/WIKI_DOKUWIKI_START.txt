@@ -116,6 +116,17 @@ Aktueller Stand: **31 Regionen** (Quelle: ''data/abfallio-service-map.json'').
   * [[https://www.team-orange.info/|Team Orange (Landkreis Würzburg)]] (Service-ID: ''3701fd1ff111f63996ab46a448669ea3'')
   * [[https://www.vivowarngau.de/|VIVO Landkreis Miesbach]] (Service-ID: ''4e33d4f09348fdcc924341bf2f27ec86'')
 
+===== Screenshots (deutsche Oberfläche) =====
+
+  * Übersicht / Status:
+{{https://raw.githubusercontent.com/spid3r/loxberry-api-abfall-io/main/docs/wiki-assets/abfallio-status-de.jpg?900|Plugin Status (Deutsch)}}
+
+  * Standort / Regions- und Straßensuche:
+{{https://raw.githubusercontent.com/spid3r/loxberry-api-abfall-io/main/docs/wiki-assets/abfallio-location-de.jpg?900|Plugin Standort (Deutsch)}}
+
+  * Einstellungen (inkl. MQTT):
+{{https://raw.githubusercontent.com/spid3r/loxberry-api-abfall-io/main/docs/wiki-assets/abfallio-settings-de.jpg?900|Plugin Einstellungen (Deutsch)}}
+
 
 ===== Integration über MQTT =====
 

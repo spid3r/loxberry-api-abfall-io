@@ -10,6 +10,8 @@ const TEMPLATE_PATH = path.join(root, "docs", "templates", "wiki.dokuwiki.tpl");
 const CHANGELOG_PATH = path.join(root, "CHANGELOG.md");
 const SERVICE_MAP_PATH = path.join(root, "data", "abfallio-service-map.json");
 const OUTPUT_PATH = path.join(root, "docs", "WIKI_DOKUWIKI_START.txt");
+const SCREENSHOT_BASE =
+  "https://raw.githubusercontent.com/spid3r/loxberry-api-abfall-io/main/docs/wiki-assets";
 
 export function parseVersionsFromChangelog(changelog, maxVersions = 5) {
   const lines = changelog.split(/\r?\n/);
@@ -92,10 +94,22 @@ export function generateWikiDoc({ templateText, changelogText, serviceMapText })
   const regions = parseAndSortRegions(serviceMapText);
   const regionsList = renderRegionList(regions);
 
+  const screenshotGallery = [
+    "  * Übersicht / Status:",
+    `{{${SCREENSHOT_BASE}/abfallio-status-de.jpg?900|Plugin Status (Deutsch)}}`,
+    "",
+    "  * Standort / Regions- und Straßensuche:",
+    `{{${SCREENSHOT_BASE}/abfallio-location-de.jpg?900|Plugin Standort (Deutsch)}}`,
+    "",
+    "  * Einstellungen (inkl. MQTT):",
+    `{{${SCREENSHOT_BASE}/abfallio-settings-de.jpg?900|Plugin Einstellungen (Deutsch)}}`,
+  ].join("\n");
+
   return templateText
     .replaceAll("{{VERSION_HISTORY}}", versions)
     .replaceAll("{{SUPPORTED_REGION_COUNT}}", String(regions.length))
-    .replaceAll("{{SUPPORTED_REGIONS_LIST}}", regionsList);
+    .replaceAll("{{SUPPORTED_REGIONS_LIST}}", regionsList)
+    .replaceAll("{{SCREENSHOT_GALLERY}}", screenshotGallery);
 }
 
 export function run() {

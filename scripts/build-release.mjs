@@ -56,6 +56,7 @@ const excludes = [
   /^test-e2e\//,
   /^playwright-report\//,
   /^test-results\//,
+  /^docs\//,
   /^scripts\//,
   /^tsconfig\.json$/,
   /^commitlint\.config\..+$/,
