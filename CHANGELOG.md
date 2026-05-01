@@ -1,3 +1,10 @@
+# [1.4.0](https://github.com/spid3r/loxberry-api-abfall-io/compare/v1.3.0...v1.4.0) (2026-05-01)
+
+
+### Features
+
+* **release:** enable LoxBerry plugin autoupdate via release cfg ([9d2258e](https://github.com/spid3r/loxberry-api-abfall-io/commit/9d2258e1d4dd25435879a4ce11c3bf9344b6e9ce))
+
 # [1.3.0](https://github.com/spid3r/loxberry-api-abfall-io/compare/v1.2.0...v1.3.0) (2026-05-01)
 
 
