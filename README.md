@@ -257,8 +257,6 @@ scripts/       build, packaging and dev tooling
 UI checks and screenshots are performed against a real configured LoxBerry appliance (see `.env`)
 via Playwright (`npm run wiki:screenshots` and `npm run wiki:screenshots:watch`).
 
-The dev server listens on `http://localhost:8080`.
-
 ## Building the release ZIP
 
 ```bash
