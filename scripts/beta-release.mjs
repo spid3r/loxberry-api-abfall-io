@@ -134,6 +134,13 @@ if (lines.every((l) => /^chore\(release\):/.test(l))) {
   process.exit(0);
 }
 
+const hasMerge = lines.some((l) => /^Merge /i.test(l));
+const hasReleasable = lines.some(isReleasableSubject);
+if (!hasReleasable && !hasMerge) {
+  console.log(`No releasable commits (feat/fix/perf/revert) and no merge since ${fromRef}; skip beta release.`);
+  process.exit(0);
+}
+
 const tagName = `v${nextVersion}`;
 try {
   if (sh(`git tag -l ${tagName}`)) {
