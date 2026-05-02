@@ -1,0 +1,39 @@
+---
+description: How this repo builds the LoxBerry ZIP, runs CI, deploys via loxberry-client, uses Playwright, and when to refresh wiki screenshots after UI changes.
+alwaysApply: true
+---
+
+## Release ZIP (what to run)
+
+- **`npm run release:zip`** — runs `build:icons`, `build` (esbuild → `bin/dist-node/`), then **`scripts/build-release.mjs`**. Output: **`dist/loxberry-plugin-abfallio-<VERSION>.zip`** where `<VERSION>` comes from **`plugin.cfg`** line `VERSION=`.
+- **`npm run verify:zip`** — asserts ZIP layout (no dev junk, required paths, **must not** contain `config/abfall.json`).
+- Userdata on the appliance lives under **`$LBHOMEDIR/config/plugins/<FOLDER>/`** and **`.../data/plugins/<FOLDER>/`**. The ZIP intentionally **omits** `config/abfall.json`; **`preupgrade.sh` / `postupgrade.sh`** back up and restore those trees on LoxBerry upgrades.
+
+## CI vs local (parity)
+
+- **`.github/workflows/ci.yml`** — `npm ci`, commitlint on push, **`npm run typecheck`**, **`npm test`**, **`npm run release:zip`**, **`npm run verify:zip`**, **`npm run wiki:build`**, Playwright install + **`npm run test:playwright`** (specs load; **no** destructive live appliance E2E unless env opt-in elsewhere).
+- **`npm run test:all`** — local “full gate” aligned with the above (includes release ZIP + verify + wiki + Playwright load).
+
+## Deploy / test on a real LoxBerry (optional)
+
+- Copy **`.env.example` → `.env`** (never commit `.env`). Needs base URL, HTTP auth, SecurePIN for client flows — see **`.env.example`** comments.
+- **`npm run plugins:deploy`** — uses **`loxberry-client`** ([`loxberry-client-library`](https://github.com/spid3r/loxberry-client-library)): builds or uses latest **`dist/loxberry-plugin-*.zip`**, deploys with wait/retry semantics. **`npm run test:live`** and related scripts wrap the same stack.
+- Long-form commands, E2E opt-in (`npm run test:e2e:full:go`), and release semantics: **`docs/DEVELOPER.md`**.
+
+## Wiki screenshots (mandatory after UI changes)
+
+- **Script:** **`scripts/generate-wiki-screenshots.mjs`** — Playwright opens the **German** admin UI, runs **`sanitizeUi`**, switches tabs, writes **`docs/wiki-assets/abfallio-{status,location,settings}-de.jpg`**.
+- **Commands:** **`npm run wiki:screenshots`** (or **`wiki:screenshots:watch`**). Requires **`.env`** with `LOXBERRY_BASE_URL`, `LOXBERRY_USERNAME`, `LOXBERRY_PASSWORD` (and `PLUGIN_FOLDER` if not `abfallio`).
+- **When to regenerate:** Any change that affects **layout, copy, tabs, or IDs** used by the script (`#tab-status`, `#tab-location`, `#tab-settings`, fields touched in `sanitizeUi`, or **README** screenshot filenames under `docs/wiki-assets/`). After capture, run **`npm run wiki:build`** so **`docs/WIKI_DOKUWIKI_START.txt`** and DokuWiki template output stay in sync; **commit the updated JPEGs** with the UI PR.
+- **README** embeds the same three JPEGs — if screenshots are stale, readers see an outdated UI.
+
+## Branches / releases (short)
+
+- **`main`** — **semantic-release** (conventional commits); stable **`release.cfg`**.
+- **`beta`** — **`beta-release.yml`** + **`scripts/beta-release.mjs`**; **`prerelease.cfg`** on branch `beta`.
+
+## Agent checklist (UI + docs touch)
+
+1. If **`webfrontend/htmlauth/`**, **`webfrontend/html/`**, or **`templates/lang/`** changed → plan **`wiki:screenshots`** + **`wiki:build`** + commit **`docs/wiki-assets/*.jpg`** when possible (user must have a reachable appliance in `.env`).
+2. If **`scripts/build-release.mjs`** or packaging rules changed → **`npm run release:zip`** and **`npm run verify:zip`**.
+3. If only **logic** without visible UI → screenshots usually unchanged.
