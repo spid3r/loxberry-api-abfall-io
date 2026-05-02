@@ -454,38 +454,27 @@ This repository uses [semantic-release](https://github.com/semantic-release/sema
 
 - Conventional Commits (`feat:`, `fix:`, `chore:`, …) drive the next version. The package starts at **0.0.0**; the **first** release is **v1.0.0** if you use a **breaking** commit header, e.g. `feat!: short description` (see `commitlint.config.mjs`). A non-breaking `feat:` from 0.0.0 would become **0.1.0** with the default analyzer.
 - [Commitlint](https://github.com/conventional-changelog/commitlint) + a Husky `commit-msg` hook enforce messages locally. CI also runs commitlint; `HUSKY=0` is set during `npm ci` so hooks are not required in GitHub Actions.
-- Pushes to **`main`** or **`beta`** run `.github/workflows/release.yml`; semantic-release may:
-  - bump `package.json` and `plugin.cfg`
-  - regenerate `CHANGELOG.md`
-  - create a Git tag and a **GitHub Release** with the **plugin ZIP** attached (`dist/loxberry-plugin-abfallio-*.zip`)
-  - **`main`** — stable semver (e.g. `1.6.0`); **`release.cfg`** on `main` is updated for autoupdates.
-  - **`beta`** — prereleases tagged **`{latest-stable}-beta.N`** (only **`N`** increases while stable is unchanged). Marked **Pre-release** on GitHub; only **`prerelease.cfg`** on branch `beta` is updated (`PRERELEASECFG` in [`plugin.cfg`](plugin.cfg) points at `raw.githubusercontent.com/.../beta/prerelease.cfg`). Upstream semantic-release would otherwise bump the core after a `fix:` on beta (for example **`1.4.2-beta.1`** while stable is still **`1.4.1`**); this repo applies **`patch-package`** to `semantic-release`’s `get-next-version.js` (see **`patches/semantic-release+25.0.3.patch`**).
-- Merge **`beta` → `main`** with a normal PR when you are ready to ship stable; changelog and versioning follow semantic-release’s usual prerelease→stable flow (**`main`** computes the real **patch/minor/major** from commits).
+- Pushes to **`main`** run [`.github/workflows/release.yml`](.github/workflows/release.yml); **semantic-release** may bump `package.json` / `plugin.cfg`, regenerate `CHANGELOG.md`, create a Git tag and a **GitHub Release** with the **plugin ZIP** (`dist/loxberry-plugin-abfallio-*.zip`), and update **`release.cfg`** on `main` for autoupdates.
+- Pushes to **`beta`** run [`.github/workflows/beta-release.yml`](.github/workflows/beta-release.yml) instead: [`scripts/beta-release.mjs`](scripts/beta-release.mjs) computes **`{latest stable Git tag}-beta.N`** (only **`N`** increases while stable is unchanged), updates **`prerelease.cfg`**, builds the ZIP, creates a **pre-release** on GitHub, and pushes a **`chore(release): … [skip ci]`** commit. This is intentional separation of concerns: **semantic-release’s prerelease branch model is designed to pre-publish the *next* semantic version** (so a `fix:` after `v1.4.1` can become **`1.4.2-beta.1`**), which is correct for that tool but not the same as “build counter on the current stable line.”
+- Merge **`beta` → `main`** when you are ready to ship stable; **`main`** then uses semantic-release for the real **patch/minor/major** and stable changelog entries.
 - It does **not** publish to npm.
 
 [Dependabot](.github/dependabot.yml) can suggest updates for GitHub Actions and npm packages; merge those PRs to stay current.
 
 ### Beta channel (LoxBerry plugin management)
 
-Branch **`beta`** is the prerelease line (common convention alongside `alpha`/`rc`; `next`
-is fine too if you rename consistently in `.releaserc.json` and `plugin.cfg`).
+Branch **`beta`** is the preview line. **`beta-release.yml`** runs [`scripts/beta-release.mjs`](scripts/beta-release.mjs) (not semantic-release). **`PRERELEASECFG`** in [`plugin.cfg`](plugin.cfg) points at `raw.githubusercontent.com/.../beta/prerelease.cfg`.
 
 1. **Git:** create or update `beta` from `main`, push `beta` (`git checkout -b beta && git push -u origin beta` the first time).
-2. Put **preview work** on **`beta`**; each push runs the same semantic-release workflow and may publish **`v{stable}-beta.M`** ZIPs **only while there are unreleased conventional commits**. **`feat:`** / **`fix:`** still matter for changelog grouping, but the **released** semver **core** advances only after **`main`** runs semantic-release.
-3. **Old or mistaken pre-releases** (wrong tag/asset): deleting the GitHub **Pre-release** and its tag is optional and manual—nothing here auto-deletes them. Prefer removing tags that confuse users (**`beta` builds after the fix will not reuse an old numbering scheme** once stable tags are authoritative). Appliances that already downloaded a ZIP keep that file until the next update.
-4. On the appliance, enable **prereleases / beta** for this plugin so LoxBerry reads `PRERELEASECFG` ([LoxBerry plugin autoupdate](https://wiki.loxberry.de/loxberry_development/en_plugins_autoupdate) — prerelease CFG is officially supported alongside `RELEASECFG`).
-5. **Stable promotion:** merge `beta` into `main` (merge commit preferred). A subsequent push to `main` produces a normal release **`vX.Y.0`** (or patch) and refreshes **`release.cfg`** on `main`.
-   On `beta`, semantic-release only updates **`prerelease.cfg`**; if you still want **`release.cfg`**
-   checked in there to mirror stable (cosmetic-only), periodically run
-   **`git checkout main -- release.cfg`** on `beta` and commit (`chore`).
+2. Land preview work on **`beta`**. A push runs the beta workflow when there are **new commits since the last beta tag** (or since the last stable tag if there is no beta yet) and the range is **not** only `chore(release): … [skip ci]` commits from the bot. Preview **`CHANGELOG.md`** entries for beta are short summaries; full conventional changelog semantics apply on **`main`**.
+3. **Old or mistaken pre-releases:** delete the GitHub **Pre-release** and tag manually if needed; nothing auto-deletes them.
+4. On the appliance, enable **prereleases / beta** so LoxBerry reads `PRERELEASECFG` ([LoxBerry plugin autoupdate](https://wiki.loxberry.de/loxberry_development/en_plugins_autoupdate)).
+5. **Stable promotion:** merge `beta` into `main` (merge commit preferred). A push to **`main`** runs semantic-release and produces **`vX.Y.Z`** plus **`release.cfg`**. If you want **`release.cfg`** on `beta` to mirror stable for cosmetics, run **`git checkout main -- release.cfg`** on `beta` and commit (`chore`).
 
 Until the first prerelease succeeds, fetching `beta/prerelease.cfg` returns whatever is committed on **beta**
 (typically the same fallback as today). After workflow runs on `beta`, that file references the newest **beta** asset URL.
 
-**Note:** Releases are computed from unreleased commits on **that branch**.
-Commits already merged to **`main`** that deserve a semver bump become a **stable**
-release when `main` runs semantic-release—they are **not** automatically turned into
-betas after the fact. For a pilot on **`beta`** only, land those commits on **`beta` first**, or temporarily move them off `main` before cutting stable.
+**Note:** Stable semver follows **`main`** only. The **`beta`** lane tags **`{stable}-beta.N`** from [`scripts/beta-release.mjs`](scripts/beta-release.mjs); merge to **`main`** when you want the next official version and changelog from semantic-release.
 
 ### First time you push to GitHub
 
@@ -502,6 +491,8 @@ Local preview:
 ```bash
 npm install
 npm run release:dry-run
+# Next beta tag only (prints version, no git writes):
+BETA_RELEASE_DRY_RUN=1 npm run release:beta
 ```
 
 ## Best-practice alignment
