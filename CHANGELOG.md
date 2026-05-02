@@ -1,10 +1,3 @@
-## [1.4.2-beta.1](https://github.com/spid3r/loxberry-api-abfall-io/compare/v1.4.1...v1.4.2-beta.1) (2026-05-02)
-
-
-### Bug Fixes
-
-* **readme:** correct markdown line break in beta pilot note ([2307023](https://github.com/spid3r/loxberry-api-abfall-io/commit/2307023a37de3b2756f8321f5cd96387f330507c))
-
 ## [1.4.1](https://github.com/spid3r/loxberry-api-abfall-io/compare/v1.4.0...v1.4.1) (2026-05-02)
 
 
