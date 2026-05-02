@@ -471,6 +471,8 @@ Branch **`beta`** is the preview line. **`beta-release.yml`** runs [`scripts/bet
 4. On the appliance, enable **prereleases / beta** so LoxBerry reads `PRERELEASECFG` ([LoxBerry plugin autoupdate](https://wiki.loxberry.de/loxberry_development/en_plugins_autoupdate)).
 5. **Stable promotion:** merge `beta` into `main` (merge commit preferred). A push to **`main`** runs semantic-release and produces **`vX.Y.Z`** plus **`release.cfg`**. If you want **`release.cfg`** on `beta` to mirror stable for cosmetics, run **`git checkout main -- release.cfg`** on `beta` and commit (`chore`).
 
+**LoxBerry autoupdate + SemVer:** If the appliance shows **Version 1.4.1** (stable) and **“Up-To-Date”** even with **“Pre- and Releases”** enabled, that is expected. Per [SemVer 2.0](https://semver.org/), a prerelease such as **`1.4.1-beta.2` has lower precedence than the release `1.4.1`**, so the updater does **not** treat the beta as “newer” than the stable you already have. You **will** get beta-to-beta updates (e.g. **`1.4.1-beta.1` → `1.4.1-beta.2`**) once the plugin is on a beta line, or when **`prerelease.cfg`’s `VERSION`** is semver-**greater** than the installed one (e.g. **`1.4.2-beta.1` > `1.4.1`**). To try a preview **without** changing that ordering, install the beta ZIP manually from the GitHub Pre-release asset URL.
+
 Until the first prerelease succeeds, fetching `beta/prerelease.cfg` returns whatever is committed on **beta**
 (typically the same fallback as today). After workflow runs on `beta`, that file references the newest **beta** asset URL.
 
