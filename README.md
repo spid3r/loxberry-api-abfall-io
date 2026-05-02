@@ -20,6 +20,7 @@ the maintainers. It is a **community best-effort** tool using **publicly accessi
 ## Table of contents
 
 - [Features](#features)
+- [Screenshots (admin UI)](#screenshots-admin-ui)
 - [Data source](#data-source)
 - [Supported regions in the UI](#supported-regions-in-the-ui)
 - [Public help page](#public-help-page-and-languages)
@@ -40,6 +41,17 @@ the maintainers. It is a **community best-effort** tool using **publicly accessi
 - **JSON** via admin/ajax; optional **JSON snapshot** from `plugins/.../index.php?format=json`; Loxone **flat text** from `webfrontend/html/loxone.php`.
 - **Icons:** `icons/icon_*.png` (labelled) → `/system/images/icons/abfallio/`; admin header uses `webfrontend/htmlauth/icon_64.png` (glyph from `icon_source_without_text.svg`). `ICON=icon_64.png` in `plugin.cfg`.
 - Optional **category filter** and **MQTT** (LoxBerry broker auto-detect from `general.json`, topic prefix, retain, QoS 1).
+
+## Screenshots (admin UI)
+
+The repo ships **German** admin previews under `docs/wiki-assets/` (JPEG). They are captured **automatically** with Playwright against a real appliance — see **`npm run wiki:screenshots`** and [`scripts/generate-wiki-screenshots.mjs`](./scripts/generate-wiki-screenshots.mjs) (needs `.env` with base URL and credentials; same assets feed `npm run wiki:build` → LoxWiki).
+
+<p align="center"><strong>Status</strong></p>
+<p align="center"><img src="docs/wiki-assets/abfallio-status-de.jpg" alt="Abfall.io plugin: Status tab (German)" width="820" /></p>
+<p align="center"><strong>Standort / Location</strong></p>
+<p align="center"><img src="docs/wiki-assets/abfallio-location-de.jpg" alt="Abfall.io plugin: Location tab (German)" width="820" /></p>
+<p align="center"><strong>Einstellungen / Settings</strong> (inkl. MQTT)</p>
+<p align="center"><img src="docs/wiki-assets/abfallio-settings-de.jpg" alt="Abfall.io plugin: Settings tab (German)" width="820" /></p>
 
 ## Data source
 
@@ -210,7 +222,18 @@ Runs `build:icons`, `build`, then packages `dist/loxberry-plugin-abfallio-<versi
 
 For **client library**, **E2E**, **beta vs main**, and **CI**, see **[docs/DEVELOPER.md](./docs/DEVELOPER.md)**.
 
-**Wiki / LoxWiki:** `npm run wiki:build` (generate + validate DokuWiki start page). Screenshots from a real box: `npm run wiki:screenshots` (requires `.env` — see developer doc).
+**Wiki / LoxWiki:** `npm run wiki:build` (generate + validate DokuWiki start page). Refresh the images above: `npm run wiki:screenshots` (`.env` — see developer doc).
+
+### Local automation (pipeline + appliance)
+
+Much of the workflow is **scripted** so you rarely click through LoxBerry by hand during development:
+
+- **CI** ([`.github/workflows/ci.yml`](./.github/workflows/ci.yml)) runs **typecheck**, **Mocha**, **`npm run release:zip`**, **ZIP sanity** (`verify:zip`), **wiki generate + validate**, and loads **Playwright** specs (live appliance E2E stays **opt-in**).
+- **`loxberry-client`** ([`loxberry-client-library`](https://github.com/spid3r/loxberry-client-library)): from this repo, **`npm run plugins:deploy`** / **`npm run test:live`** build the ZIP and **install or upgrade** the plugin on a box in one step (wait for install, retries, folder→pid resolution — see [docs/DEVELOPER.md](./docs/DEVELOPER.md)).
+- **Playwright** drives both **wiki screenshots** (`wiki:screenshots`) and the **optional destructive** full lifecycle test (`test-e2e/`, `npm run test:e2e:full:go` with explicit env opt-in).
+- Other tooling lives under **`scripts/`** (esbuild bundle, LoxBerry ZIP layout, beta release helper, wiki template merge).
+
+Together that covers **edit → test → zip → deploy → capture docs** without maintaining a separate manual checklist for every change.
 
 ## Runtime compatibility
 

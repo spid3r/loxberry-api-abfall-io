@@ -49,7 +49,7 @@ npm run wiki:screenshots
 npm run wiki:screenshots:watch   # headed + watch
 ```
 
-Then `npm run wiki:build` regenerates `docs/WIKI_DOKUWIKI_START.txt`.
+Then `npm run wiki:build` regenerates `docs/WIKI_DOKUWIKI_START.txt`. The same JPEGs under `docs/wiki-assets/` are also shown in the root **README** so GitHub visitors see the admin UI at a glance.
 
 ## Live appliance: `loxberry-client`
 
