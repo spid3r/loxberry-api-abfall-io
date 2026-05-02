@@ -17,189 +17,112 @@ the maintainers. It is a **community best-effort** tool using **publicly accessi
 6-hour** interval between scheduled fetches to avoid placing unnecessary load on upstream servers. The service may
 **change or stop at any time**. Full text: **[DISCLAIMER.md](./DISCLAIMER.md)** (German and English).
 
+## Table of contents
+
+- [Features](#features)
+- [Data source](#data-source)
+- [Supported regions in the UI](#supported-regions-in-the-ui)
+- [Public help page](#public-help-page-and-languages)
+- [Installation](#installation)
+- [Configuration](#configuration)
+- [JSON format](#json-format)
+- [Architecture](#architecture)
+- [Building & development](#building--development)
+- [Runtime compatibility](#runtime-compatibility)
+- [Best-practice alignment](#best-practice-alignment)
+- [License](#license)
+
 ## Features
 
-- **Admin UI in German and English** (plugin strings, help texts, and the in-page quick guide). The data is for
-  German municipal schedules, but the UI can stay in English if you prefer.
-  Language is chosen from the **Language** dropdown (or `?lang=de` / `?lang=en` on the first request; then cookie, plugin
-  `config/abfall.json`, LoxBerry system language, and `Accept-Language`). If nothing matches, **German** is the default.
-  The **Status** tab starts with
-  a short “how to use” block for new users. In normal operation the page is **embedded in the LoxBerry shell**
-  (like other plugins).
-- Street and house-number lookup against `api.abfall.io`
-- Scheduled background fetch via cron: **minimum fetch interval 6 hours** (configurable upward to 168 hours) plus a **fuzz factor**
-  (random ± minutes, default 30) so the API is not hit on the same minute by
-  every LoxBerry running this plugin
-- JSON from the admin/ajax API (`htmlauth/ajax.php`); optional **JSON snapshot**
-  from `plugins/.../index.php?format=json` (without `?format=json`, the same URL
-  shows a simple help page in a browser). Loxone **flat text** from
-  `webfrontend/html/loxone.php`
-- Plugin list icon: core copies **`icons/icon_*.png`** (with label from
-  **`icon_source.svg`**) into **`/system/images/icons/abfallio/`**. The embedded admin
-  header uses **`webfrontend/htmlauth/icon_64.png`** (**`icon_source_without_text.svg`**,
-  no label; see *Building* below). `ICON=icon_64.png` in `plugin.cfg` matches the preview
-  file name convention.
-- Optional category filtering
-- Optional **MQTT publishing** to LoxBerry's built-in broker, with
-  auto-detection of broker credentials from
-  `${LBHOMEDIR}/config/system/general.json` (configurable topic prefix,
-  retain flag, QoS 1)
+- **Admin UI in German and English** — language from **Language** dropdown, `?lang=de` / `?lang=en`, cookie, plugin config, LoxBerry system language, `Accept-Language`; default **German**. **Status** tab includes a short “how to use” block. Page is **embedded in the LoxBerry shell** like other plugins.
+- Street and house-number lookup against `api.abfall.io`.
+- **Cron** (hourly at minute 17): `fetch.cjs` respects a **minimum interval** (default **6 h**, up to 168 h) plus **fuzz** (default ±30 min) so many boxes do not hit the API at the same instant.
+- **JSON** via admin/ajax; optional **JSON snapshot** from `plugins/.../index.php?format=json`; Loxone **flat text** from `webfrontend/html/loxone.php`.
+- **Icons:** `icons/icon_*.png` (labelled) → `/system/images/icons/abfallio/`; admin header uses `webfrontend/htmlauth/icon_64.png` (glyph from `icon_source_without_text.svg`). `ICON=icon_64.png` in `plugin.cfg`.
+- Optional **category filter** and **MQTT** (LoxBerry broker auto-detect from `general.json`, topic prefix, retain, QoS 1).
 
-## Data source: what is “the API mode”?
+## Data source
 
-This plugin has **a single data path**: the public service [`api.abfall.io`](https://api.abfall.io/) used by many
-municipal waste sites. There is **no alternate backend** to pick in the UI. The status line **Data source** simply
-names that service (it is *not* a mode selector). Schedules are downloaded as a **web calendar (ICS / iCal)** in
-the background, then normalised; you do not manage ICS files yourself. You do **not** need a personal account
-on api.abfall.io. Each municipality or provider on abfall.io has its own **32-character hex service key**
-(the same as on their “Abfuhrtermine” web app). **You must choose your region** on the **Location** tab first
-(autocomplete list or expert key), then **Save region & settings**; there is **no hidden default city** — until a
-key is saved, street search and fetch are disabled.
-You can read the key from the browser’s **Network** tab when triggering an **ICS export** on your local waste
-schedule page, or use community docs (e.g. Home Assistant’s [abfall.io source
-notes](https://github.com/mampfes/hacs_waste_collection_schedule/blob/master/doc/source/abfall_io.md)). Then search
-your street on the same **Location** tab (below the region block).
+Single data path: public [`api.abfall.io`](https://api.abfall.io/). The **Data source** line in the UI is **informational**, not a selector. Schedules are fetched as **ICS** in the background and normalised — no manual ICS files. **No personal account** on api.abfall.io. Each provider has a **32-character hex service key** (same as on municipal “Abfuhrtermine” pages). **Location** tab: pick region or expert key → **Save region & settings**; then street search. Until a key is saved, street search and fetch are disabled. Finding the key: browser **Network** tab on ICS export, or community docs (e.g. Home Assistant [abfall.io source](https://github.com/mampfes/hacs_waste_collection_schedule/blob/master/doc/source/abfall_io.md)).
 
-## Which municipalities and providers are supported in the UI?
+## Supported regions in the UI
 
-**Scope of this plugin:** only waste schedules that are reachable via
-[`api.abfall.io`](https://api.abfall.io/) (same public API that many local “Abfuhr / Abfall”
-websites use). There is **no** single official “all Germany” API from abfall.io; the plugin
-therefore does **not** know every city by magic.
+Only schedules reachable via **api.abfall.io**. The **Location** tab lists supported regions in the collapsible *“Which regions work?”* block (names from the bundled autocomplete data).
 
-**What the admin UI actually lists:** on the **Standort / Location** tab (with the region search) you will find a
-block *“Which regions work?”* (collapsible) with **every `service` name** in the current autocomplete
-data file — that is the explicit answer to *“which municipalities work in this list”*.
-
-- **Source of the names:** a community-curated list aligned with the Home Assistant
-  [`waste_collection_schedule`](https://github.com/mampfes/hacs_waste_collection_schedule) /
-  *AbfallIO* `SERVICE_MAP` (and the `AbfallIO.py` file the plugin can download when you
-  use **“Update region list online”**).
-- **Shipped file:** `data/abfallio-service-map.json` in the plugin tree (bundled in the ZIP).
-- **Override after an online refresh:** the updated copy in the LoxBerry **plugin data**
-  directory: `<LBHOMEDIR>/data/plugins/<FOLDER>/abfallio-service-map.json` (takes
-  precedence if present).
-- **Your town not in the list?** The operator can still be on abfall.io — use the **expert**
-  32-hex *service key* and then pick your address on the *Location* tab. Operators that do
-  **not** use abfall.io are **out of scope** (different backends would need separate
-  integrations, like the many other *sources* in the Home Assistant project above).
+- **Source:** community list aligned with Home Assistant [`waste_collection_schedule`](https://github.com/mampfes/hacs_waste_collection_schedule) / *AbfallIO* `SERVICE_MAP`; plugin can **refresh online** (`AbfallIO.py`).
+- **Bundled:** `data/abfallio-service-map.json` (in the ZIP).
+- **Override:** `<LBHOMEDIR>/data/plugins/<FOLDER>/abfallio-service-map.json` if present.
+- **Town missing?** Try expert **service key**; operators **not** on abfall.io are out of scope.
 
 ## Public help page and languages
 
-If you open `plugins/<folder>/index.php` in a browser, you get a **short, translated help** page (or force it with
-`?view=html`). The same strings live in `templates/lang/language_de.ini` and `language_en.ini` as the admin UI. To switch language, add
-`?lang=de` or `?lang=en`. For machines and `curl`, use `?format=json` (as described below).
+Opening `plugins/<folder>/index.php` shows a **short help** page (`?view=html`). Same strings as admin live in `templates/lang/language_*.ini`. For machines: `?format=json` as below. `?lang=de` / `?lang=en` switch language.
 
 ## Installation
 
 ### On a LoxBerry appliance
 
-1. Download the latest plugin ZIP from the
-   [GitHub releases page](https://github.com/spid3r/loxberry-api-abfall-io/releases).
-2. Install it in LoxBerry under *System ▸ Plugins*.
-3. Open the plugin, **Location** — pick your **waste region** (or enter a service key) and **Save region & settings**;
-   then search your street and save, *Status* — **Fetch now** to test.
+1. Download the latest plugin ZIP from [GitHub Releases](https://github.com/spid3r/loxberry-api-abfall-io/releases).
+2. **System → Plugins** → install.
+3. Open plugin → **Location**: region (or service key) → **Save region & settings** → street → save → **Status** → **Fetch now**.
 
-**First time (absolute beginner):** (1) *Location* — region + save (same action stores interval/MQTT defaults too). (2) same tab — street, save. (3) *Status* —
-**Fetch now** and wait for dates. (4) Optional: *Settings* for interval (≥6 h), filter, MQTT, Loxone/JSON. If
-something fails, read the *Log* tab. The *Status* data card **Data source** is informational only. See
-[DISCLAIMER.md](./DISCLAIMER.md) for limitations and “no support” wording.
+**Beginner path:** (1) Location + save. (2) Street + save. (3) Status → Fetch now. (4) Optional: **Settings** (interval ≥6 h, filter, MQTT, Loxone/JSON). Problems → **Log** tab. See [DISCLAIMER.md](./DISCLAIMER.md).
 
-### Local development checks
+**Install from URL:** use the **release asset** ZIP link (`…/releases/download/vVERSION/loxberry-plugin-abfallio-VERSION.zip`), not “Source code”. More detail: [docs/DEVELOPER.md](./docs/DEVELOPER.md).
 
-```bash
-git clone https://github.com/spid3r/loxberry-api-abfall-io.git
-cd loxberry-api-abfall-io
-npm install
-npm run typecheck
-npm test
-npm run build
-```
+**Install errors (extract / “Unknown Plugin”):** [docs/troubleshooting-plugin-install.md](./docs/troubleshooting-plugin-install.md).
 
-**Full local gate (same as CI: types + unit tests + release ZIP + zip sanity + Playwright spec load; destructive E2E against a real LoxBerry stays opt-in):**
+### Local development
 
-```bash
-npm run test:all
-```
-
-**Develop `loxberry-client-library` side-by-side** (sibling clone): after changes in the library, run `npm run link:client-lib` — it builds the library, runs `npm link` / `npm link loxberry-client-library`, then you use the same `node_modules` resolution as a global link. Run it again whenever you pull or change the client library.
-
-You can drive the bundled CLI directly:
-
-```bash
-node bin/abfall_api.cjs status
-node bin/abfall_api.cjs search_street "main"
-node bin/abfall_api.cjs search_hnr "<street_id>"
-node bin/abfall_api.cjs fetch
-node bin/fetch.cjs --force
-```
+Clone, `npm install`, `npm run typecheck`, `npm test`, `npm run build`. Full gate: `npm run test:all`. **Contributors:** full workflow (live deploy, E2E, semantic-release, beta lane) → **[docs/DEVELOPER.md](./docs/DEVELOPER.md)**.
 
 ## Configuration
 
 ### 1) Location (region, then address)
 
-In the plugin UI open the *Standort* / *Location* tab:
+In the *Standort* / *Location* tab:
 
-- Choose your **waste region** (autocomplete) or the expert **service key**, then **Save region & settings**
+- Choose **waste region** (autocomplete) or expert **service key**, then **Save region & settings**
 - **Then** search a street (min. 3 characters)
-- Pick a house number if the API requires one
+- Pick a house number if required
 - **Save location**
 
 ### 2) Fetch interval & fuzz factor
 
 In *Einstellungen* / *Settings*:
 
-- **Fetch interval (hours)** — how often `fetch.cjs` may hit the upstream API.
-  The default for a new install is **6 hours** (override in the UI or locally in
-  `config/abfall.json` when developing from a git checkout).   Release ZIP builds
-  **omit** `config/abfall.json` on purpose so the archive itself does **not**
-  overwrite `…/config/plugins/abfallio/abfall.json`. LoxBerry also **recreates plugin
-  trees on upgrade**, so **`preupgrade.sh` / `postupgrade.sh`** back up and restore
-  `config/plugins/abfallio` and `data/plugins/abfallio` (region, cache, MQTT, etc.).
-- **Fuzz factor (± minutes)** — random offset added to the interval so 1000
-  appliances don't all poll at HH:00:00. Defaults to ±30 min, set to 0 to
-  disable.
+- **Fetch interval (hours)** — default **6** (UI or local `config/abfall.json` in a git checkout). Release ZIP **does not** ship `config/abfall.json` so upgrades do not overwrite `$LBHOMEDIR/config/plugins/abfallio/abfall.json`. LoxBerry **rebuilds plugin trees on upgrade**; **`preupgrade.sh` / `postupgrade.sh`** back up and restore `config/plugins/...` and `data/plugins/...`.
+- **Fuzz (± minutes)** — default ±30; set `0` to disable.
 
-The cron job runs hourly at minute 17 and `fetch.cjs` skips itself until the
-configured interval *plus* the random offset has elapsed.
+Cron runs hourly at :17; `fetch.cjs` skips until interval + fuzz allow the next run.
 
 ### 3) MQTT publishing (optional)
 
-Toggle *Daten nach jedem Abruf per MQTT veröffentlichen* and either let the
-plugin auto-detect the LoxBerry broker or fill in custom host/port/credentials.
-After every successful fetch the plugin publishes (retained, QoS 1):
+Toggle publish-after-fetch; auto-detect LoxBerry broker or set host/port/user. After each successful fetch (retained, QoS 1), topics include:
 
 ```text
-<prefix>/state                              # full JSON snapshot
-<prefix>/last_fetch                         # "YYYY-MM-DD HH:MM:SS"
-<prefix>/location                           # human readable street
-<prefix>/categories_count                   # number of upcoming categories
-<prefix>/categories/<slug>/days             # days until next pickup
-<prefix>/categories/<slug>/date             # next pickup date (DD.MM.YYYY)
-<prefix>/categories/<slug>/weekday          # weekday name
-<prefix>/categories/<slug>/weekday_num     # 1=Monday .. 7=Sunday
-<prefix>/categories/<slug>/category         # original category label
+<prefix>/state
+<prefix>/last_fetch
+<prefix>/location
+<prefix>/categories_count
+<prefix>/categories/<slug>/days|date|weekday|weekday_num|category
 ```
 
-Default prefix is `loxberry/abfallio`. German umlauts in category names are
-folded to ASCII (`Grünabfall` → `gruenabfall`).
+Default prefix `loxberry/abfallio`. Umlauts in category names fold to ASCII (`Grünabfall` → `gruenabfall`).
 
 ### 4) Loxone Miniserver
 
-Add a Virtual HTTP Input pointing at:
+Virtual HTTP Input:
 
-- `http://<loxberry-ip>/plugins/abfallio/loxone.php` — flat output for all categories
-- `http://<loxberry-ip>/plugins/abfallio/loxone.php?cat=<category>` — single category
-- `http://<loxberry-ip>/plugins/abfallio/loxone.php?format=list` — category list
+- `http://<loxberry-ip>/plugins/abfallio/loxone.php` — all categories
+- `…/loxone.php?cat=<category>` — one category
+- `…/loxone.php?format=list` — category list
 
-**JSON snapshot (optional):**  
-`http://<loxberry-ip>/plugins/abfallio/index.php?format=json` — same cache file as above, for tools that want JSON.  
-`.../index.php?view=html` — short help page in **DE** or **EN**; use `?lang=de` or `?lang=en`.
-  Normal browsers also get HTML if `text/html` is in `Accept` and `?format=json` is not used.
+**JSON:** `http://<loxberry-ip>/plugins/abfallio/index.php?format=json` — same cache as above. `…/index.php?view=html` — short DE/EN help; `?lang=de|en`.
 
-After a **major plugin update** on the box, if `index.php?format=json` still looks wrong while `loxone.php` is fine, uninstall the plugin and install the new ZIP once (LoxBerry can leave an old public `index.php` behind when the version number did not change).
+If after a major update `index.php?format=json` looks wrong while `loxone.php` works, reinstall the ZIP once (LoxBerry can leave an old public `index.php` when the version string did not change).
 
-Polling interval: `3600` (once per hour).
+Polling interval for Loxone: e.g. `3600` (hourly).
 
 ## JSON format
 
@@ -213,12 +136,6 @@ Polling interval: `3600` (once per hour).
       "datum": "30.04.2026",
       "wochentag": "Thursday",
       "wochentag_num": 4
-    },
-    "Residual Waste": {
-      "tage": 12,
-      "datum": "07.05.2026",
-      "wochentag": "Thursday",
-      "wochentag_num": 4
     }
   },
   "next_fetch_due": "2026-04-27 09:53:38",
@@ -229,300 +146,83 @@ Polling interval: `3600` (once per hour).
 
 ## Architecture
 
-- **Backend** — TypeScript (Node.js 20+), ESM, bundled with `esbuild` to a
-  single file under `dist-node/cli/`. A post-build copy mirrors that tree to
-  `bin/dist-node/` so `bin/*.cjs` shims and the LoxBerry ZIP all use the same
-  relative `require` paths, without a `node_modules/` directory on the appliance.
-- **Frontend** — LoxBerry-native PHP pages (`webfrontend/htmlauth/index.php`,
-  `webfrontend/htmlauth/ajax.php`) that shell out to the Node CLI for
-  business logic.
-- **i18n** — `webfrontend/htmlauth/i18n.php` resolves the active language
-  (URL ▸ cookie ▸ plugin config ▸ LoxBerry system ▸ Accept-Language ▸ default **German**)
-  and loads `templates/lang/language_de.ini` / `language_en.ini` (see Features). The public `webfrontend/html/index.php` uses static `public_help_de.html` / `public_help_en.html` for the browser help view.
-- **Tests** — Mocha + Chai, run via the `tsx` runtime. Unit tests for the parser, paths,
-  category filter, fuzz scheduler and MQTT publisher; opt-in live mocha smoke test that exercises
-  a real appliance over HTTP. A separate, destructive Playwright lifecycle test
-  in `test-e2e/` performs uninstall + install + UI fetch, then (with MQTT enabled)
-  a `fetch_now` that must record an `mqtt.last` timestamp (success `ok: true` depends
-  on a reachable broker). It is opt-in only (see *Maximum end-to-end test* below).
-  Full line coverage is not a goal: edge cases in PHP templates or rare API failures
-  are not all exercised in CI.
+**Stack:** TypeScript (Node 18+), ESM, **esbuild** → `dist-node/cli/`, mirrored to `bin/dist-node/`; `bin/*.cjs` shims. **PHP** admin (`webfrontend/htmlauth/`, `ajax.php`) for UI; optional shell-out to Node CLI. **i18n:** `i18n.php` + `templates/lang/language_*.ini`. **Tests:** Mocha (`test-ts/`); destructive Playwright in `test-e2e/` (opt-in — [docs/DEVELOPER.md](./docs/DEVELOPER.md)).
 
-```text
-src-ts/        TypeScript sources
-  cli/         CLI entrypoints (abfall_api.ts, fetch.ts)
-  lib/         logic (paths, abfall-service, mqtt-publisher, types, logger)
-test-ts/       Mocha specs
-test-e2e/      Destructive Playwright lifecycle test (opt-in only)
-webfrontend/   LoxBerry-native PHP UI / endpoints
-templates/     language files
-config/        default plugin config shipped with the ZIP
-bin/           CommonJS shims (`.cjs`) that `require` `dist-node/cli/*` (mirrored on build; same layout in the ZIP)
-scripts/       build, packaging and dev tooling
-.github/       CI + semantic-release workflows
+### Runtime data flow (simplified)
+
+```mermaid
+flowchart TB
+  subgraph Admin["Admin UI (PHP)"]
+    UI[htmlauth index + ajax]
+  end
+  CFG["$LBHOMEDIR/config/plugins/abfallio/abfall.json"]
+  CRON["Cron → fetch.cjs (Node)"]
+  API["api.abfall.io (ICS)"]
+  CACHE["$LBHOMEDIR/data/plugins/abfallio/abfall_data.json"]
+  subgraph Out["Outputs"]
+    MQTT[MQTT topics]
+    LOX[loxone.php flat text]
+    PUB["index.php JSON / help"]
+  end
+  UI --> CFG
+  CRON --> CFG
+  CRON --> API
+  API --> CACHE
+  CACHE --> MQTT
+  CACHE --> LOX
+  CACHE --> PUB
 ```
 
-## Local UI checks
+### Development & release (overview)
 
-UI checks and screenshots are performed against a real configured LoxBerry appliance (see `.env`)
-via Playwright (`npm run wiki:screenshots` and `npm run wiki:screenshots:watch`).
+```mermaid
+flowchart LR
+  subgraph Local["Local"]
+    E[Edit TS / PHP]
+    T["npm test / typecheck"]
+    Z["npm run release:zip"]
+  end
+  subgraph GitHub["GitHub"]
+    PR[PR / push]
+    CI[CI workflow]
+  end
+  subgraph Branches["Branches"]
+    M[main]
+    B[beta]
+  end
+  E --> T --> Z --> PR --> CI
+  CI --> M
+  CI --> B
+  M --> SR["semantic-release → stable + CHANGELOG"]
+  B --> BR["beta-release.mjs → pre-release ZIP"]
+```
 
-## Building the release ZIP
+**Details:** [docs/DEVELOPER.md](./docs/DEVELOPER.md) (live `loxberry-client` deploy, destructive E2E env vars, Actions secrets, semantic-release vs beta lane, wiki screenshots).
+
+## Building & development
 
 ```bash
 npm install
 npm run release:zip
 ```
 
-This runs `build:icons` (rasterises `icon_source.svg` into **`icons/icon_*.png`** for the system
-/overview, and `icon_source_without_text.svg` into **`webfrontend/**/icon_64.png`** for the
-embedded admin header),
-`build` (esbuild bundles for `bin/`), then `build-release` (ZIP).
+Runs `build:icons`, `build`, then packages `dist/loxberry-plugin-abfallio-<version>.zip`. Icon sources: `icons/icon_source.svg` (overview) and `icons/icon_source_without_text.svg` (admin thumb); `npm run build:icons` before release.
 
-The artifact lands in `dist/loxberry-plugin-abfallio-<version>.zip` and is
-the file you upload to LoxBerry. The build excludes `src-ts/`, `test-ts/`,
-`scripts/`, `node_modules/`, dotfiles and the `.playwright-mcp/` working
-folder.
+For **client library**, **E2E**, **beta vs main**, and **CI**, see **[docs/DEVELOPER.md](./docs/DEVELOPER.md)**.
 
-**Icon art:** waste / wheelie-bin + collection calendar (fits `api.abfall.io`).
-Edit `icons/icon_source.svg` (labelled overview icon set) and/or
-`icons/icon_source_without_text.svg` (header glyph), then run `npm run build:icons` before a release.
-
-## Optional live appliance testing
-
-This repository uses the CLI from
-[`loxberry-client-library`](https://github.com/spid3r/loxberry-client-library)
-(`file:../loxberry-client-library` in `package.json` when the repo is next to
-that checkout) to install/uninstall the plugin. A plain `plugins upload --file` **without**
-`--wait-install` still outputs the first HTML response; **`npm run test:live` / `npm run plugins:deploy`** run
-`loxberry-client plugins deploy --project .`, which uses **`plugins deploy`** in the
-library: newest `dist/loxberry-plugin-*.zip`, **`FOLDER=`** from `plugin.cfg`, then
-`--wait-install` + list wait, plus an **md5-change fallback** for flaky responses. After you
-publish a new library version, bump the dependency and run `npm update loxberry-client-library`.
-
-**Repo layout:** clone `loxberry-api-abfall-io` and `loxberry-client-library` as
-siblings, then `npm install` in the plugin repo. `npm run use:local-client-library`
-re-links the local library. To publish, bump and release
-`loxberry-client-library` first, then you can point this package at the npm
-version instead of `file:..` if you prefer.
-
-1. Build the plugin ZIP: `npm run release:zip`
-2. Copy `.env.example` to `.env` and fill in your appliance credentials and
-   SecurePIN. **`.env` is gitignored.**
-3. Run any of:
-   - `npm run plugins:list`
-   - `npm run test:live` (build ZIP + `plugins deploy` to the box)
-   - `npm run plugins:deploy` (upload latest ZIP only, same as the old `plugins:upload:latest` name)
-   - `npm run test:live:street` (street search + config save + fetch smoke test)
-   - `npm run test:live:full` (same + uninstall the plugin folder)
-   - `npm run e2e:appliance:go` — alias for the **destructive** Playwright gate
-     (`npm run test:e2e:full:go`: build ZIP, uninstall, deploy with **retries**, UI test). No extra
-     pre-upload: the suite already builds and installs a fresh copy; a prior `plugins:deploy` only
-     duplicated work and did not fix LoxBerry temp-file races after uninstall.
-
-You can also call the CLI directly:
-
-```bash
-npm run lb:cli -- plugins list
-npm run lb:cli -- plugins deploy --project .   # after npm run release:zip — same as npm run plugins:deploy
-npm run plugins:uninstall
-```
-
-`npm run plugins:uninstall` calls `plugins uninstall --name abfallio`. The
-**loxberry-client** CLI resolves a **folder name** to the **pid (md5)** via `plugins list`
-when `--name` is not 32 hex characters — you do not need a separate script.
-
-To uninstall manually: `npm run lb:cli -- plugins uninstall --name <md5-or-folder>`.
-
-## Maximum end-to-end test (destructive, opt-in)
-
-For a full release-candidate gate there is an additional Playwright suite at
-`test-e2e/full-lifecycle.spec.ts` that exercises the plugin on a **real**
-LoxBerry appliance:
-
-1. Builds a fresh release ZIP.
-2. Uninstalls any previous version of `abfallio` from the appliance.
-3. Uploads + installs the freshly built ZIP via the `loxberry-client` CLI.
-4. Drives the admin UI: searches a street, picks a house number if required,
-   saves the location (auto-fetch runs from the same flow).
-5. Asserts that data is fetched, at least one upcoming category is rendered, and
-   the public Loxone flat-text (`loxone.php`) endpoint returns category lines
-   (including `?format=list` and `?cat=…` for a single value).
-6. Exercises the **Settings** tab (default fetch interval, fuzz save, MQTT
-   enable/disable save), the **Log** tab, the authenticated **ajax** actions
-   (`status`, `log`), the public `index.php?view=html` page, and a German
-   admin URL smoke check. It does **not** replace the Mocha suite: `npm test`
-   still runs parser, scheduling, and MQTT **unit** tests locally and in CI; E2E
-   only makes sense on a real appliance.
-7. Stops. The plugin is deliberately left installed so you can inspect it.
-
-This is **destructive** (it uninstalls and reinstalls the plugin). It is kept
-out of `npm test` and CI; both the npm launcher and the spec file refuse to
-run unless you opt in twice:
-
-```bash
-npm run test:e2e:full:go
-```
-
-(equivalent: `npm run test:e2e:full -- --yes-i-am-developer`)
-
-Required environment variables in `.env`:
-
-- `LOXBERRY_BASE_URL`, `LOXBERRY_USERNAME`, `LOXBERRY_PASSWORD`
-- `LOXBERRY_SECURE_PIN`
-- `TEST_STREET_QUERY` (used to type into the street search box)
-- `TEST_STREET_NAME` (optional, preferred match in the dropdown)
-
-Optional tuning (set in the environment or `.env` when using `dotenv-cli`):
-
-- `E2E_HEADED=0` — run Chromium **headless** (default on your machine is a
-  **visible** browser window so you can see the steps). Set `E2E_HEADED=0` in
-  `.env` if you do not want a window. CI is always headless.
-- `E2E_SKIP_UNINSTALL=1` — skip the uninstall step (useful to avoid
-  back-to-back install races; you already get a *fresh* config only after a
-  full uninstall+install of `abfallio`).
-- The underlying LoxBerry API uses **`pid` = plugin MD5** (same as the web UI);
-  the test harness passes that value, **not** the folder name, to
-  `plugins uninstall --name …`.
-- Uninstall is **verified** by re-querying `loxberry-client plugins list` until
-  `abfallio` is gone (not only the CLI exit code). Tune with:
-  `E2E_UNINSTALL_CMD_ATTEMPTS` (default `3`), `E2E_UNINSTALL_WAIT_MS` (default
-  `120000` per attempt), `E2E_UNINSTALL_POLL_MS` (default `750` — how often
-  `plugins list` is re-checked; the first check is immediate, then the delay).
-- `E2E_POST_UNINSTALL_MS` (default `8000`) / `E2E_POST_INSTALL_MS` (default
-  `12000`) — **extra** settle time in milliseconds *after* uninstall is
-  confirmed in the list (or *after* the plugin row appears on install), so
-  LoxBerry can finish internal work before the next step. On very slow
-  hardware, raise them (e.g. `E2E_POST_UNINSTALL_MS=45000` was used earlier).
-- `E2E_DEPLOY_MAX_ATTEMPTS` (default `6`) / `E2E_DEPLOY_RETRY_MS` (default `8000`) —
-  after uninstall, `plugins deploy` is retried when the install log shows a
-  missing temp zip or extract failure (known LoxBerry race); wait `E2E_DEPLOY_RETRY_MS`
-  between attempts.
-- `E2E_INSTALL_WAIT_MS` (default `120000`) / `E2E_INSTALL_POLL_MS` (default
-  `750`) — how long the suite **polls `plugins list`** after a successful
-  upload until the `abfallio` row appears (LoxBerry can be slower than the
-  CLI exit code; first `plugins list` call is immediate, then the poll interval).
-
-The first run downloads Playwright's Chromium build (~120 MB) into your local
-Playwright cache.
+**Wiki / LoxWiki:** `npm run wiki:build` (generate + validate DokuWiki start page). Screenshots from a real box: `npm run wiki:screenshots` (requires `.env` — see developer doc).
 
 ## Runtime compatibility
 
-- Requires Node.js ≥ 18 (LoxBerry 3 baseline).
-- `preinstall.sh` performs a Node runtime version check.
-- The release ZIP excludes dev-only folders, Inkscape **SVG** masters, and the
-  large Inkscape **`icon_source*.svg`** sources;
-  shipped PNGs are only **`icons/icon_*.png`** and **`webfrontend/**/icon_64.png`**
-  is bundled.
-
-## GitHub Actions: secrets and tokens
-
-- **CI (`.github/workflows/ci.yml`)** — needs **no** repository or organization secrets. It only typechecks, runs Mocha, and smoke-builds the plugin ZIP. It does not talk to a LoxBerry, upload plugins, or run Playwright E2E.
-- **Release (`.github/workflows/release.yml`)** — uses the built-in **`GITHUB_TOKEN`**. You do **not** need a Personal Access Token (PAT) for creating releases and uploading the plugin ZIP, as long as the workflow job has `permissions: contents: write` (already set). No `NPM_TOKEN` is used; this project is not published to npm.
-- If you add private Git submodules or a private `npm` registry later, you would add separate secrets then — the stock setup does not require them.
-
-## Install from a GitHub Release URL (LoxBerry Plugin Management)
-
-LoxBerry can install a plugin from a direct download URL. Use the **asset file** on a release, not the `Source code (zip)` download.
-
-- Open the [GitHub releases page](https://github.com/spid3r/loxberry-api-abfall-io/releases) and pick a version, or use **Latest** for the current release.
-- The attachable file is named like `loxberry-plugin-abfallio-1.2.3.zip` (exact name is shown on the release).
-- A stable per-release URL has the form:
-
-  `https://github.com/OWNER/REPO/releases/download/vVERSION/loxberry-plugin-abfallio-VERSION.zip`
-
-  Example (replace with your real tag and file name as shown on the release):
-
-  `https://github.com/spid3r/loxberry-api-abfall-io/releases/download/v1.0.0/loxberry-plugin-abfallio-1.0.0.zip`
-
-Paste that URL into **LoxBerry Admin → Plugin Management** where the appliance asks for a plugin URL. The browser’s “Copy link” on the release asset is usually the right link (must return the raw ZIP, not an HTML page).
-
-**Legacy `abfallu` install:** if you still have the old `abfallu` plugin folder, uninstall it before installing `abfallio` so you do not run two copies of the same app.
-
-## LoxBerry email: “Unknown Plugin: Error while extracting from plugin archive” (or *“The PID does not exist”*)
-
-That notification comes from the appliance when a **particular** install attempt fails. It is **not** always the final outcome if you immediately tried again. Common cases:
-
-- **“Browse” / file upload in Plugin Management:** the [LoxBerry FAQ for this exact error](https://wiki.loxberry.de/loxberry_english/english_faq_and_knowledge_base/plugin_cannot_be_installed) explains that using the **file picker** can send a **corrupted stream** to the box, so unzip fails. **Prefer “install from URL”** (paste the [GitHub release asset](#install-from-a-github-release-url-loxberry-plugin-management) link so LoxBerry downloads the ZIP itself) or try another browser; the same `loxberry-plugin-abfallio-….zip` file often works when the appliance fetches it by URL.
-- **Only one install at a time:** if an upload/URL install started while a previous one was still extracting, LoxBerry can report errors and email you even though a later attempt succeeds. Wait until Plugin Management is idle, then install once.
-- **“Unknown Plugin: The PID does not exist”** often means the installer referred to a plugin process ID that LoxBerry had already cleared (race between uninstall/reinstall/parallel steps). The same mitigations as below apply: increase settle time between uninstall and install, avoid parallel installs, or set `E2E_SKIP_UNINSTALL=1` while iterating and upgrade manually once the box is quiet.
-- **Automated or repeated tests:** the destructive E2E test or `plugins:upload:latest` in a loop can trigger overlapping or back-to-back installs. The suite now **polls the plugin list** after `plugins uninstall` so a slow UI does not look like a success; you can still raise `E2E_UNINSTALL_WAIT_MS` / `E2E_POST_UNINSTALL_MS` on a slow host, or use `E2E_SKIP_UNINSTALL=1` for in-place upgrade tests.
-- **Wrong URL:** installing from a GitHub **HTML** page or a `Source code` zip instead of the **release asset** can fail; use the `releases/download/.../loxberry-plugin-....zip` link from the [Releases](https://github.com/spid3r/loxberry-api-abfall-io/releases) page.
-- **Two plugins (`abfallu` + `abfallio`):** remove the legacy one to avoid confusion; only `abfallio` is the current package name in `plugin.cfg`.
-
-If the latest install in the UI shows the plugin as installed and the admin UI works, the zip content is valid — treat the email as a failed attempt, not necessarily a broken build.
-
-## Release workflow
-
-This repository uses [semantic-release](https://github.com/semantic-release/semantic-release):
-
-- Conventional Commits (`feat:`, `fix:`, `chore:`, …) drive the next version. The package starts at **0.0.0**; the **first** release is **v1.0.0** if you use a **breaking** commit header, e.g. `feat!: short description` (see `commitlint.config.mjs`). A non-breaking `feat:` from 0.0.0 would become **0.1.0** with the default analyzer.
-- [Commitlint](https://github.com/conventional-changelog/commitlint) + a Husky `commit-msg` hook enforce messages locally. CI also runs commitlint; `HUSKY=0` is set during `npm ci` so hooks are not required in GitHub Actions.
-- Pushes to **`main`** run [`.github/workflows/release.yml`](.github/workflows/release.yml); **semantic-release** may bump `package.json` / `plugin.cfg`, regenerate `CHANGELOG.md`, create a Git tag and a **GitHub Release** with the **plugin ZIP** (`dist/loxberry-plugin-abfallio-*.zip`), and update **`release.cfg`** on `main` for autoupdates.
-- Pushes to **`beta`** run [`.github/workflows/beta-release.yml`](.github/workflows/beta-release.yml) instead: [`scripts/beta-release.mjs`](scripts/beta-release.mjs) computes **`{latest stable Git tag}-beta.N`** (only **`N`** increases while stable is unchanged), updates **`prerelease.cfg`**, builds the ZIP, creates a **pre-release** on GitHub, and pushes a **`chore(release): … [skip ci]`** commit. This is intentional separation of concerns: **semantic-release’s prerelease branch model is designed to pre-publish the *next* semantic version** (so a `fix:` after `v1.4.1` can become **`1.4.2-beta.1`**), which is correct for that tool but not the same as “build counter on the current stable line.”
-- Merge **`beta` → `main`** when you are ready to ship stable; **`main`** then uses semantic-release for the real **patch/minor/major** and stable changelog entries.
-- It does **not** publish to npm.
-
-[Dependabot](.github/dependabot.yml) can suggest updates for GitHub Actions and npm packages; merge those PRs to stay current.
-
-### Beta channel (LoxBerry plugin management)
-
-Branch **`beta`** is the preview line. **`beta-release.yml`** runs [`scripts/beta-release.mjs`](scripts/beta-release.mjs) (not semantic-release). **`PRERELEASECFG`** in [`plugin.cfg`](plugin.cfg) points at `raw.githubusercontent.com/.../beta/prerelease.cfg`.
-
-1. **Git:** create or update `beta` from `main`, push `beta` (`git checkout -b beta && git push -u origin beta` the first time).
-2. Land preview work on **`beta`**. A push runs the beta workflow when there are **new commits since the last beta tag** (or since the last stable tag if there is no beta yet) and the range is **not** only `chore(release): … [skip ci]` commits from the bot. Preview **`CHANGELOG.md`** entries for beta are short summaries; full conventional changelog semantics apply on **`main`**.
-3. **Old or mistaken pre-releases:** delete the GitHub **Pre-release** and tag manually if needed; nothing auto-deletes them.
-4. On the appliance, enable **prereleases / beta** so LoxBerry reads `PRERELEASECFG` ([LoxBerry: automatic and manual plugin updates](https://wiki.loxberry.de/loxberry_english/english_faq_and_knowledge_base/automatic_and_manual_plugin_updates)).
-5. **Stable promotion:** merge `beta` into `main` (merge commit preferred). A push to **`main`** runs semantic-release and produces **`vX.Y.Z`** plus **`release.cfg`**. If you want **`release.cfg`** on `beta` to mirror stable for cosmetics, run **`git checkout main -- release.cfg`** on `beta` and commit (`chore`).
-
-**LoxBerry autoupdate + SemVer:** If the appliance shows **Version 1.4.1** (stable) and **“Up-To-Date”** even with **“Pre- and Releases”** enabled, that is expected. Per [SemVer 2.0](https://semver.org/), a prerelease such as **`1.4.1-beta.2` has lower precedence than the release `1.4.1`**, so the updater does **not** treat the beta as “newer” than the stable you already have. You **will** get beta-to-beta updates (e.g. **`1.4.1-beta.1` → `1.4.1-beta.2`**) once the plugin is on a beta line, or when **`prerelease.cfg`’s `VERSION`** is semver-**greater** than the installed one (e.g. **`1.4.2-beta.1` > `1.4.1`**). To try a preview **without** changing that ordering, install the beta ZIP manually from the GitHub Pre-release asset URL.
-
-#### Trying the beta channel on LoxBerry (first install → updates visible)
-
-1. **GitHub** — open [Releases](https://github.com/spid3r/loxberry-api-abfall-io/releases), switch to **“Pre-releases”**, pick the latest **`v…-beta…`** entry.
-2. **Copy the plugin ZIP asset URL** (the file named `loxberry-plugin-abfallio-….zip` under **Assets** — same pattern as stable: `https://github.com/spid3r/loxberry-api-abfall-io/releases/download/vX.Y.Z-beta.N/loxberry-plugin-abfallio-X.Y.Z-beta.N.zip`).
-3. **LoxBerry** — Plugin Management → install **from URL** (or upload the ZIP), enter **SecurePIN**. This replaces or installs the plugin so the overview shows **`X.Y.Z-beta.N`** (not the stable-only number).
-4. Set **Automatic updates** to **“Pre- and Releases”** for that plugin, then **“Re-Check for Updates”** (or wait for the daily check). From then on, each new **`X.Y.Z-beta.(N+1)`** in `prerelease.cfg` is **semver-greater** than the installed beta and will show as a normal update / notification flow.
-5. **Optional check:** open [`beta/prerelease.cfg`](https://raw.githubusercontent.com/spid3r/loxberry-api-abfall-io/beta/prerelease.cfg) in the browser — `VERSION` and `ARCHIVEURL` must match the ZIP you expect.
-
-**Why not only “turn on Pre- and Releases” on stable?** That only tells LoxBerry *which INI to read*; it does not change SemVer. Stable **`1.4.1`** stays “newer than” **`1.4.1-beta.*`**, so there is nothing to auto-offer until the installed version itself is a beta (or the offered prerelease version is numerically above stable, e.g. **`1.4.2-beta.1`**).
-
-Until the first prerelease succeeds, fetching `beta/prerelease.cfg` returns whatever is committed on **beta**
-(typically the same fallback as today). After workflow runs on `beta`, that file references the newest **beta** asset URL.
-
-**Note:** Stable semver follows **`main`** only. The **`beta`** lane tags **`{stable}-beta.N`** from [`scripts/beta-release.mjs`](scripts/beta-release.mjs); merge to **`main`** when you want the next official version and changelog from semantic-release.
-
-### First time you push to GitHub
-
-1. **Enable Actions** in the repository settings (if GitHub does not run workflows yet).
-2. **CI** — every push/PR runs tests and a release-ZIP build; no secrets are required. Do not commit `.env` or LoxBerry credentials (they are gitignored).
-3. **Releases** — merge to `default` / `main` with [Conventional Commits](https://www.conventionalcommits.org/) (e.g. `feat:`, `fix:`, `perf:`) so `semantic-release` can compute a version, create a **Git tag** and a **GitHub Release**, and upload the `loxberry-plugin-abfallio-*.zip` asset. The workflow uses the built-in `GITHUB_TOKEN` only; no personal access token and no npm publish.
-4. The **install URL** for LoxBerry “install from URL” is the *asset* link on the release, e.g. `https://github.com/ORG/REPO/releases/download/vX.Y.Z/loxberry-plugin-abfallio-X.Y.Z.zip` — not the “Source code” zip.
-5. **Plugin icons** — `ICON=icon_64.png`; **`icons/icon_*.png`** (labelled → overview in
-   `/system/images/icons/abfallio/`) and **`webfrontend/**/icon_64.png`** (glyph-only admin
-   thumb). Run `npm run build:icons` before releasing; reinstall/update the plugin to refresh.
-
-Local preview:
-
-```bash
-npm install
-npm run release:dry-run
-# Next beta tag only (prints version, no git writes):
-BETA_RELEASE_DRY_RUN=1 npm run release:beta
-```
+- Node.js ≥ 18 (LoxBerry 3); `preinstall.sh` checks version.
+- Release ZIP excludes dev-only paths, SVG icon masters; ships PNGs under `icons/` and `webfrontend/**/icon_64.png` only.
 
 ## Best-practice alignment
 
-- LoxBerry-native plugin layout: `plugin.cfg`, `webfrontend/`, `config/`,
-  `data/`, `cron/`, install hooks (`preinstall.sh` / `postinstall.sh` /
-  `postroot.sh` / `preuninstall.sh` / `postuninstall.sh`).
-- No mandatory Express Server plugin dependency.
-- Live automation lives in root scripts and is excluded from the release ZIP.
-- Follows LoxBerry developer guidance:
-  - [LoxBerry Developer Overview](https://wiki.loxberry.de/entwickler/start)
-  - [Node.js plugin development](https://wiki.loxberry.de/entwickler/node_js_plugin_entwicklung)
+- LoxBerry layout: `plugin.cfg`, `webfrontend/`, `config/`, `data/`, `cron/`, install hooks (`preinstall`, `preupgrade`, `postinstall`, `postupgrade`, `postroot`, `preuninstall`, `postuninstall`).
+- No mandatory Express Server plugin.
+- Guidance: [LoxBerry Developer](https://wiki.loxberry.de/entwickler/start), [Node.js plugins](https://wiki.loxberry.de/entwickler/node_js_plugin_entwicklung).
 
 ## License
 
 MIT — see [LICENSE](LICENSE).
-
