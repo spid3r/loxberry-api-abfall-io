@@ -6,6 +6,16 @@
 
 [![CI](https://github.com/spid3r/loxberry-api-abfall-io/actions/workflows/ci.yml/badge.svg)](https://github.com/spid3r/loxberry-api-abfall-io/actions/workflows/ci.yml)
 [![Release](https://github.com/spid3r/loxberry-api-abfall-io/actions/workflows/release.yml/badge.svg)](https://github.com/spid3r/loxberry-api-abfall-io/actions/workflows/release.yml)
+[![Beta release](https://github.com/spid3r/loxberry-api-abfall-io/actions/workflows/beta-release.yml/badge.svg)](https://github.com/spid3r/loxberry-api-abfall-io/actions/workflows/beta-release.yml)
+
+[![Conventional Commits](https://img.shields.io/badge/Conventional%20Commits-1.0.0-yellow.svg)](https://www.conventionalcommits.org/en/v1.0.0/)
+[![semantic-release](https://img.shields.io/badge/semantic--release-e10079?logo=semantic-release&logoColor=white)](https://github.com/semantic-release/semantic-release)
+[![Commitlint](https://img.shields.io/badge/commitlint-config--conventional-blue)](https://commitlint.js.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
+[![Node.js](https://img.shields.io/badge/node-%3E%3D20-339933?logo=nodedotjs&logoColor=white)](./package.json)
+[![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white)](./tsconfig.json)
+[![Playwright](https://img.shields.io/badge/Playwright-e2e-45ba4b?logo=playwright&logoColor=white)](./test-e2e/)
+[![LoxBerry](https://img.shields.io/badge/LoxBerry-3.x-2d2d2d)](https://wiki.loxberry.de/)
 
 LoxBerry 3 plugin that retrieves waste-collection schedules from
 [`api.abfall.io`](https://api.abfall.io/) and exposes them as JSON, flat-text
