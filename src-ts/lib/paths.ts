@@ -98,11 +98,15 @@ export function resolvePaths(): ResolvedPaths {
   let dataDir: string;
   let logDir: string;
 
-  const lbPluginConfig = lbpplugindir
-    ? path.join(lbhomedir, "config", "plugins", lbpplugindir)
-    : "";
-  if (lbpplugindir && fs.existsSync(lbPluginConfig)) {
-    configDir = lbPluginConfig;
+  /**
+   * LoxBerry stores user config under $LBHOMEDIR/config/plugins/<PFOLDER>/ and data under
+   * data/plugins/<PFOLDER>/. These paths must be used whenever env is set — do not require
+   * the directory to exist first; otherwise Node fall back to the plugin extract (./config)
+   * and can diverge from PHP (which always uses the central config path), which looks like
+   * "settings lost" after updates.
+   */
+  if (lbhomedir && lbpplugindir) {
+    configDir = path.join(lbhomedir, "config", "plugins", lbpplugindir);
     dataDir = path.join(lbhomedir, "data", "plugins", lbpplugindir);
     logDir = path.join(lbhomedir, "log", "plugins", lbpplugindir);
   } else {
