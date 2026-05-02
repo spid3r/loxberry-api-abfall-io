@@ -474,7 +474,10 @@ is fine too if you rename consistently in `.releaserc.json` and `plugin.cfg`).
 1. **Git:** create or update `beta` from `main`, push `beta` (`git checkout -b beta && git push -u origin beta` the first time).
 2. Put **preview work** (`feat:` / `fix:` as needed for a version bump) on `beta`; each push runs the same semantic-release workflow and may publish **`vX.Y.Z-beta.M`** ZIPs **only while there are unreleased conventional commits**.
 3. On the appliance, enable **prereleases / beta** for this plugin so LoxBerry reads `PRERELEASECFG` ([LoxBerry plugin autoupdate](https://wiki.loxberry.de/loxberry_development/en_plugins_autoupdate) — prerelease CFG is officially supported alongside `RELEASECFG`).
-4. **Stable promotion:** merge `beta` into `main` (merge commit preferred). A subsequent push to `main` produces a normal release **`vX.Y.0`** (or patch) and refreshes **`release.cfg`**.
+4. **Stable promotion:** merge `beta` into `main` (merge commit preferred). A subsequent push to `main` produces a normal release **`vX.Y.0`** (or patch) and refreshes **`release.cfg`** on `main`.
+   On `beta`, semantic-release only updates **`prerelease.cfg`**; if you still want **`release.cfg`**
+   checked in there to mirror stable (cosmetic-only), periodically run
+   **`git checkout main -- release.cfg`** on `beta` and commit (`chore`).
 
 Until the first prerelease succeeds, fetching `beta/prerelease.cfg` returns whatever is committed on **beta**
 (typically the same fallback as today). After workflow runs on `beta`, that file references the newest **beta** asset URL.
