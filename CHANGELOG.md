@@ -1,3 +1,7 @@
+## [1.4.1-beta.5](https://github.com/spid3r/loxberry-api-abfall-io/compare/v1.4.1-beta.4...v1.4.1-beta.5) (2026-05-02)
+
+* fix(release): omit bundled abfall.json from plugin ZIP
+
 ## [1.4.1-beta.4](https://github.com/spid3r/loxberry-api-abfall-io/compare/v1.4.1-beta.3...v1.4.1-beta.4) (2026-05-02)
 
 * fix: always resolve user config under loxberry central paths
