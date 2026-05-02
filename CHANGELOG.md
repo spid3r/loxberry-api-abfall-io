@@ -1,3 +1,10 @@
+## [1.4.2-beta.2](https://github.com/spid3r/loxberry-api-abfall-io/compare/v1.4.2-beta.1...v1.4.2-beta.2) (2026-05-02)
+
+
+### Bug Fixes
+
+* trigger beta release to verify pinned prerelease semver ([31fb609](https://github.com/spid3r/loxberry-api-abfall-io/commit/31fb609ea4c2aa976cca6778b791c6f3491d7b24))
+
 ## [1.4.2-beta.1](https://github.com/spid3r/loxberry-api-abfall-io/compare/v1.4.1...v1.4.2-beta.1) (2026-05-02)
 
 
