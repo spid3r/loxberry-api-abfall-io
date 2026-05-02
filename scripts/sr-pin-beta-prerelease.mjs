@@ -22,6 +22,8 @@ function coreTriple(version) {
 /**
  * On branch `beta`, keep the semver *core* at the newest **stable** tag and only bump
  * `-beta.N`. Main still uses semantic-release's default bumps (feat/fix/minor/major).
+ *
+ * (Conventional `fix:` on `beta` exercises this path in CI without advancing the core.)
  */
 function computePinnedBetaVersion(branch, tagFormat) {
   const id = prereleaseIdentifier(branch);
