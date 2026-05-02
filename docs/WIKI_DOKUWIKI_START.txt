@@ -1,6 +1,10 @@
 ﻿====== Abfall IO / Abfallabholung (api.abfall.io) ======
 
 ++++ Version History |
+**Version 1.4.1**
+
+  * **icons:** update plugin icons and enhance icon generation script (dbb79d2)
+
 **Version 1.4.0**
 
   * **release:** enable LoxBerry plugin autoupdate via release cfg (9d2258e)
@@ -16,10 +20,6 @@
 **Version 1.1.0**
 
   * migrate plugin to abfall.io naming and service map (499b7d5)
-
-**Version 1.0.2**
-
-  * add postroot and patch cron functionality (fb1648e)
 
 Ältere Releases, Änderungsnotizen sowie die **ZIP‑Pakete** findest du bei **[[https://github.com/spid3r/loxberry-api-abfall-io/releases|GitHub Releases]]**. Der **Quelltext** liegt im **[[https://github.com/spid3r/loxberry-api-abfall-io|Repository]]**.
 
