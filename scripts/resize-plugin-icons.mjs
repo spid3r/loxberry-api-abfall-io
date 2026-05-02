@@ -1,10 +1,14 @@
 /**
- * Renders the four LoxBerry-required PNG sizes (64/128/256/512) from a single
- * high-res source. LoxBerry maps overview icons to:
- *   /system/images/icons/<PLUGIN_NAME>/icon_64.png
- * and the overview widget is picky about having real small assets.
+ * Builds LoxBerry plugin PNG icons (64/128/256/512) from Inkscape SVG masters.
  *
- * We pick the largest dimension icon under icons/ as the source, or icons/icon_512.png.
+ * Sources (under icons/):
+ *   - icon_source_without_text.svg -> icon_{64,128,256,512}.png (plugin default)
+ *   - icon_source.svg               -> icon_with_text_{64,...,512}.png (optional)
+ *
+ * Each output is a square app icon: full-bleed squircle (rounded rect over the
+ * whole PNG; corner pixels transparent) with a light 3D-style face gradient,
+ * soft cast shadow, thin outer rim, and inner highlight ring. Artwork is
+ * trimmed then composited on top so it stays sharp.
  */
 import fs from "node:fs";
 import path from "node:path";
@@ -17,47 +21,97 @@ const iconsDir = path.join(root, "icons");
 
 const sizes = [64, 128, 256, 512];
 
-async function pickSource() {
-  const candidates = [
-    "icon_512.png",
-    "icon_256.png",
-    "icon_128.png",
-    "icon_64.png",
-  ].map((f) => path.join(iconsDir, f));
+/** iOS-style corner radius as fraction of side (full-bleed squircle). */
+const SQUIRCLE_RX_RATIO = 0.2237;
 
-  let best = null;
-  let bestArea = 0;
-  for (const file of candidates) {
-    if (!fs.existsSync(file)) continue;
-    const m = await sharp(file).metadata();
-    const area = (m.width || 0) * (m.height || 0);
-    if (area > bestArea) {
-      bestArea = area;
-      best = file;
-    }
-  }
-  if (!best) {
-    throw new Error("No source PNG under icons/ (expected icon_512.png or similar).");
-  }
-  return best;
+/** Minimal inset between squircle edge and artwork (fraction of side). */
+const ART_INSET_RATIO = 0.022;
+
+const VARIANTS = [
+  { svg: "icon_source_without_text.svg", outPrefix: "icon_", required: true },
+  { svg: "icon_source.svg", outPrefix: "icon_with_text_", required: false },
+];
+
+function fullBleedSquircleSvg(pixelSize) {
+  const s = pixelSize;
+  const rx = Math.min(Math.round(s * SQUIRCLE_RX_RATIO), Math.floor(s / 2));
+  const dy = Math.max(1, Math.round(s * 0.014));
+  const blur = Math.max(1.5, s * 0.02);
+  const outerStroke = Math.max(0.85, s * 0.006);
+  const inset = Math.max(1, Math.round(s * 0.016));
+  const innerW = s - 2 * inset;
+  const innerRx = Math.min(Math.round(innerW * SQUIRCLE_RX_RATIO), Math.floor(innerW / 2));
+  const innerGleam = Math.max(0.55, s * 0.0032);
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${s}" height="${s}" viewBox="0 0 ${s} ${s}">
+<defs>
+  <linearGradient id="tileFace" x1="0%" y1="0%" x2="100%" y2="100%">
+    <stop offset="0%" stop-color="#ffffff"/>
+    <stop offset="52%" stop-color="#f3f4f6"/>
+    <stop offset="100%" stop-color="#d9dee4"/>
+  </linearGradient>
+  <filter id="tile3d" x="-25%" y="-25%" width="150%" height="150%" color-interpolation-filters="sRGB">
+    <feDropShadow dx="0" dy="${dy}" stdDeviation="${blur}" flood-color="#1a2233" flood-opacity="0.24"/>
+  </filter>
+</defs>
+<rect width="${s}" height="${s}" rx="${rx}" ry="${rx}" fill="url(#tileFace)" stroke="rgba(0,0,0,0.1)" stroke-width="${outerStroke}" filter="url(#tile3d)"/>
+<rect x="${inset}" y="${inset}" width="${innerW}" height="${innerW}" rx="${innerRx}" ry="${innerRx}" fill="none" stroke="rgba(255,255,255,0.42)" stroke-width="${innerGleam}"/>
+</svg>`;
+}
+
+/**
+ * @param {string} svgPath
+ * @param {number} pixelSize
+ */
+async function renderFramedAppIcon(svgPath, pixelSize) {
+  const s = pixelSize;
+  const pad = Math.max(0, Math.round(s * ART_INSET_RATIO));
+  const artBox = Math.max(8, s - 2 * pad);
+
+  const baseBuf = await sharp(Buffer.from(fullBleedSquircleSvg(s), "utf8")).ensureAlpha().png().toBuffer();
+
+  const svgBuf = fs.readFileSync(svgPath);
+  let artSharp = sharp(svgBuf).trim({ threshold: 2 });
+  const artBuf = await artSharp
+    .resize(artBox, artBox, {
+      fit: "contain",
+      background: { r: 255, g: 255, b: 255, alpha: 0 },
+    })
+    .png()
+    .toBuffer();
+
+  const meta = await sharp(artBuf).metadata();
+  const aw = meta.width || artBox;
+  const ah = meta.height || artBox;
+  const left = pad + Math.round((artBox - aw) / 2);
+  const top = pad + Math.round((artBox - ah) / 2);
+
+  return sharp(baseBuf)
+    .composite([{ input: artBuf, left, top }])
+    .png()
+    .toBuffer();
 }
 
 async function main() {
-  const source = await pickSource();
-  const sourceBuf = fs.readFileSync(source);
-  for (const size of sizes) {
-    const out = path.join(iconsDir, `icon_${size}.png`);
-    await sharp(sourceBuf)
-      .resize(size, size, { fit: "contain", background: { r: 255, g: 255, b: 255, alpha: 0 } })
-      .png()
-      .toFile(out);
-    console.log(`Wrote ${path.relative(root, out)}`);
+  for (const variant of VARIANTS) {
+    const svgPath = path.join(iconsDir, variant.svg);
+    if (!fs.existsSync(svgPath)) {
+      if (variant.required) {
+        throw new Error(`Missing required SVG: ${path.relative(root, svgPath)}`);
+      }
+      console.warn(`Skip variant (file missing): ${variant.svg}`);
+      continue;
+    }
+    console.log(`Variant: ${variant.svg} -> ${variant.outPrefix}*.png`);
+    for (const size of sizes) {
+      const out = path.join(iconsDir, `${variant.outPrefix}${size}.png`);
+      const png = await renderFramedAppIcon(svgPath, size);
+      fs.writeFileSync(out, png);
+      console.log(`  Wrote ${path.relative(root, out)}`);
+    }
   }
-  // Public + auth UIs: LoxBerry docs / overview helpers expect a small icon in html
-  const small = await sharp(sourceBuf)
-    .resize(64, 64, { fit: "contain", background: { r: 255, g: 255, b: 255, alpha: 0 } })
-    .png()
-    .toBuffer();
+
+  const defaultSvg = path.join(iconsDir, "icon_source_without_text.svg");
+  const small = await renderFramedAppIcon(defaultSvg, 64);
   for (const rel of ["webfrontend/html/icon_64.png", "webfrontend/htmlauth/icon_64.png"]) {
     const p = path.join(root, rel);
     fs.mkdirSync(path.dirname(p), { recursive: true });
