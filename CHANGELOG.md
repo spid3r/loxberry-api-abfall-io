@@ -1,3 +1,10 @@
+## [1.4.1](https://github.com/spid3r/loxberry-api-abfall-io/compare/v1.4.0...v1.4.1) (2026-05-02)
+
+
+### Bug Fixes
+
+* **icons:** update plugin icons and enhance icon generation script ([dbb79d2](https://github.com/spid3r/loxberry-api-abfall-io/commit/dbb79d22c1062e28e7191c5f02361e5fabc40ea4))
+
 ## [1.4.1-beta.1](https://github.com/spid3r/loxberry-api-abfall-io/compare/v1.4.0...v1.4.1-beta.1) (2026-05-02)
 
 
