@@ -484,8 +484,7 @@ Until the first prerelease succeeds, fetching `beta/prerelease.cfg` returns what
 **Note:** Releases are computed from unreleased commits on **that branch**.
 Commits already merged to **`main`** that deserve a semver bump become a **stable**
 release when `main` runs semantic-release—they are **not** automatically turned into
-betas after the fact. For a pilot on **`beta`** only, land those commits on **`beta`
-first**, or temporarily move them off `main` before cutting stable.
+betas after the fact. For a pilot on **`beta`** only, land those commits on **`beta` first**, or temporarily move them off `main` before cutting stable.
 
 ### First time you push to GitHub
 
