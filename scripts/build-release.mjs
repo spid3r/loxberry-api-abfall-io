@@ -57,6 +57,9 @@ const excludes = [
   /^playwright-report\//,
   /^test-results\//,
   /^docs\//,
+  /* Icon sources / alternate raster: stay in git; LoxBerry only needs icons/icon_{64,128,256,512}.png */
+  /^icons\/icon_source.*\.svg$/i,
+  /^icons\/icon_with_text_\d+\.png$/i,
   /^scripts\//,
   /^tsconfig\.json$/,
   /^commitlint\.config\..+$/,

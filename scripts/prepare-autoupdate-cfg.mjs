@@ -1,4 +1,11 @@
-﻿import fs from "node:fs";
+﻿/**
+ * Writes LoxBerry autoupdate INI snippets for semantic-release prepare.
+ *
+ * Stable releases (e.g. 1.5.0) update only release.cfg.
+ * Prereleases (e.g. 1.5.0-beta.1) update only prerelease.cfg so main/stable URLs
+ * are untouched and beta testers can follow PRERELEASECFG (typically raw `beta`).
+ */
+import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -13,6 +20,11 @@ if (!nextVersion) {
 
 const releaseCfgPath = path.join(root, "release.cfg");
 const prereleaseCfgPath = path.join(root, "prerelease.cfg");
+
+/** true for 1.2.3-beta.4, 2.0.0-rc.1, etc. (SemVer prerelease segment). */
+function isSemverPrerelease(v) {
+  return /^\d+\.\d+\.\d+-/.test(v);
+}
 
 const tag = `v${nextVersion}`;
 const archiveUrl = `https://github.com/spid3r/loxberry-api-abfall-io/releases/download/${tag}/loxberry-plugin-abfallio-${nextVersion}.zip`;
@@ -29,7 +41,12 @@ function renderConfig() {
 }
 
 const cfg = renderConfig();
-fs.writeFileSync(releaseCfgPath, cfg, "utf-8");
-fs.writeFileSync(prereleaseCfgPath, cfg, "utf-8");
+const pre = isSemverPrerelease(nextVersion);
 
-console.log(`Updated release.cfg and prerelease.cfg for ${nextVersion}`);
+if (pre) {
+  fs.writeFileSync(prereleaseCfgPath, cfg, "utf-8");
+  console.log(`Updated prerelease.cfg for ${nextVersion} (stable release.cfg unchanged).`);
+} else {
+  fs.writeFileSync(releaseCfgPath, cfg, "utf-8");
+  console.log(`Updated release.cfg for ${nextVersion} (beta prerelease.cfg unchanged).`);
+}

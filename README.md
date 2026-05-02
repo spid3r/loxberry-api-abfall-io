@@ -1,5 +1,9 @@
 # loxberry-api-abfall-io
 
+<p align="center">
+  <img src="icons/icon_256.png" alt="Abfall.io LoxBerry plugin icon (wheelie bin and calendar)" width="128" height="128" />
+</p>
+
 [![CI](https://github.com/spid3r/loxberry-api-abfall-io/actions/workflows/ci.yml/badge.svg)](https://github.com/spid3r/loxberry-api-abfall-io/actions/workflows/ci.yml)
 [![Release](https://github.com/spid3r/loxberry-api-abfall-io/actions/workflows/release.yml/badge.svg)](https://github.com/spid3r/loxberry-api-abfall-io/actions/workflows/release.yml)
 
@@ -31,8 +35,11 @@ the maintainers. It is a **community best-effort** tool using **publicly accessi
   shows a simple help page in a browser). Loxone **flat text** from
   `webfrontend/html/loxone.php`
 - Plugin list icon: `plugin.cfg` references `webfrontend/html/icon_64.png`;
-  all four `icons/icon_{64,128,256,512}.png` are generated in `release:zip`
-  from a single source (see *Building* below)
+  all four `icons/icon_{64,128,256,512}.png` are generated before packaging from
+  `icons/icon_source_without_text.svg` (see *Building* below). The text variant
+  (`icon_source.svg` → `icon_with_text_*.png`) is built locally for previews only;
+  it is **not** included in the release ZIP (the appliance only needs the four
+  `icons/icon_*.png` files plus the two `icon_64.png` copies under `webfrontend/`).
 - Optional category filtering
 - Optional **MQTT publishing** to LoxBerry's built-in broker, with
   auto-detection of broker credentials from
@@ -264,8 +271,9 @@ npm install
 npm run release:zip
 ```
 
-This runs `build:icons` (resizes the artwork under `icons/` to the four
-LoxBerry sizes, writes `webfrontend/html/icon_64.png` for the management UI),
+This runs `build:icons` (rasterises the Inkscape masters `icons/icon_source_without_text.svg`
+and `icons/icon_source.svg` into squircle PNGs at 64/128/256/512, writes
+`webfrontend/html/icon_64.png` and `webfrontend/htmlauth/icon_64.png` for the management UI),
 `build` (esbuild bundles for `bin/`), then `build-release` (ZIP).
 
 The artifact lands in `dist/loxberry-plugin-abfallio-<version>.zip` and is
@@ -273,9 +281,9 @@ the file you upload to LoxBerry. The build excludes `src-ts/`, `test-ts/`,
 `scripts/`, `node_modules/`, dotfiles and the `.playwright-mcp/` working
 folder.
 
-**Icon art:** the theme is a waste/wheelie-bin + collection calendar (suitable
-for `api.abfall.io`). To change branding, replace the largest sharp-readable PNG
-in `icons/` and re-run `npm run build:icons` before a release.
+**Icon art:** waste / wheelie-bin + collection calendar (fits `api.abfall.io`).
+Edit `icons/icon_source_without_text.svg` (plugin icons) and/or
+`icons/icon_source.svg` (with label), then run `npm run build:icons` before a release.
 
 ## Optional live appliance testing
 
@@ -399,7 +407,10 @@ Playwright cache.
 
 - Requires Node.js ≥ 18 (LoxBerry 3 baseline).
 - `preinstall.sh` performs a Node runtime version check.
-- The release ZIP excludes dev-only folders so the appliance footprint stays small.
+- The release ZIP excludes dev-only folders, Inkscape **SVG** masters, and the
+  optional **`icon_with_text_*.png`** set so the appliance footprint stays small;
+  only the LoxBerry icon PNG set under `icons/` and `webfrontend/**/icon_64.png`
+  is bundled.
 
 ## GitHub Actions: secrets and tokens
 
@@ -444,13 +455,35 @@ This repository uses [semantic-release](https://github.com/semantic-release/sema
 
 - Conventional Commits (`feat:`, `fix:`, `chore:`, …) drive the next version. The package starts at **0.0.0**; the **first** release is **v1.0.0** if you use a **breaking** commit header, e.g. `feat!: short description` (see `commitlint.config.mjs`). A non-breaking `feat:` from 0.0.0 would become **0.1.0** with the default analyzer.
 - [Commitlint](https://github.com/conventional-changelog/commitlint) + a Husky `commit-msg` hook enforce messages locally. CI also runs commitlint; `HUSKY=0` is set during `npm ci` so hooks are not required in GitHub Actions.
-- Pushes to `main` run `.github/workflows/release.yml`, which (via semantic-release) may:
+- Pushes to **`main`** or **`beta`** run `.github/workflows/release.yml`; semantic-release may:
   - bump `package.json` and `plugin.cfg`
   - regenerate `CHANGELOG.md`
   - create a Git tag and a **GitHub Release** with the **plugin ZIP** attached (`dist/loxberry-plugin-abfallio-*.zip`)
+  - **`main`** — stable semver (e.g. `1.6.0`); **`release.cfg`** on `main` is updated for autoupdates.
+  - **`beta`** — prereleases tagged `x.y.z-beta.N`, marked **Pre-release** on GitHub; only **`prerelease.cfg`** on branch `beta` is updated (`PRERELEASECFG` in [`plugin.cfg`](plugin.cfg) points at `raw.githubusercontent.com/.../beta/prerelease.cfg`).
+- Merge **`beta` → `main`** with a normal PR when you are ready to ship stable; changelog and versioning follow semantic-release’s usual prerelease→stable flow.
 - It does **not** publish to npm.
 
 [Dependabot](.github/dependabot.yml) can suggest updates for GitHub Actions and npm packages; merge those PRs to stay current.
+
+### Beta channel (LoxBerry plugin management)
+
+Branch **`beta`** is the prerelease line (common convention alongside `alpha`/`rc`; `next`
+is fine too if you rename consistently in `.releaserc.json` and `plugin.cfg`).
+
+1. **Git:** create or update `beta` from `main`, push `beta` (`git checkout -b beta && git push -u origin beta` the first time).
+2. Put **preview work** (`feat:` / `fix:` as needed for a version bump) on `beta`; each push runs the same semantic-release workflow and may publish **`vX.Y.Z-beta.M`** ZIPs **only while there are unreleased conventional commits**.
+3. On the appliance, enable **prereleases / beta** for this plugin so LoxBerry reads `PRERELEASECFG` ([LoxBerry plugin autoupdate](https://wiki.loxberry.de/loxberry_development/en_plugins_autoupdate) — prerelease CFG is officially supported alongside `RELEASECFG`).
+4. **Stable promotion:** merge `beta` into `main` (merge commit preferred). A subsequent push to `main` produces a normal release **`vX.Y.0`** (or patch) and refreshes **`release.cfg`**.
+
+Until the first prerelease succeeds, fetching `beta/prerelease.cfg` returns whatever is committed on **beta**
+(typically the same fallback as today). After workflow runs on `beta`, that file references the newest **beta** asset URL.
+
+**Note:** Releases are computed from unreleased commits on **that branch**.
+Commits already merged to **`main`** that deserve a semver bump become a **stable**
+release when `main` runs semantic-release—they are **not** automatically turned into
+betas after the fact. For a pilot on **`beta`** only, land those commits on **`beta`
+first**, or temporarily move them off `main` before cutting stable.
 
 ### First time you push to GitHub
 
@@ -458,7 +491,9 @@ This repository uses [semantic-release](https://github.com/semantic-release/sema
 2. **CI** — every push/PR runs tests and a release-ZIP build; no secrets are required. Do not commit `.env` or LoxBerry credentials (they are gitignored).
 3. **Releases** — merge to `default` / `main` with [Conventional Commits](https://www.conventionalcommits.org/) (e.g. `feat:`, `fix:`, `perf:`) so `semantic-release` can compute a version, create a **Git tag** and a **GitHub Release**, and upload the `loxberry-plugin-abfallio-*.zip` asset. The workflow uses the built-in `GITHUB_TOKEN` only; no personal access token and no npm publish.
 4. The **install URL** for LoxBerry “install from URL” is the *asset* link on the release, e.g. `https://github.com/ORG/REPO/releases/download/vX.Y.Z/loxberry-plugin-abfallio-X.Y.Z.zip` — not the “Source code” zip.
-5. **Plugin list icon** — after a fix that adds `ICON=icon_64.png` and proper `icons/`, **reinstall or update the plugin** on the LoxBerry so the core can copy the new `icons/icon_*.png` set into `/system/images/icons/abfallio/`.
+5. **Plugin list icon** — `ICON=icon_64.png` and the generated `icons/icon_*.png`
+   (from `npm run build:icons`). **Reinstall or update** the plugin on the LoxBerry
+   so the core copies them into `/system/images/icons/abfallio/`.
 
 Local preview:
 

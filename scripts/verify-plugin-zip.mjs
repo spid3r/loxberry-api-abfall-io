@@ -97,19 +97,39 @@ const mustHave = [
   "bin/fetch.cjs",
   "webfrontend/htmlauth/index.php",
   "webfrontend/htmlauth/ajax.php",
+  "webfrontend/htmlauth/icon_64.png",
   "webfrontend/html/loxone.php",
   "webfrontend/html/index.php",
   "webfrontend/html/waste_data_paths.php",
+  "webfrontend/html/icon_64.png",
   "templates/lang/language_en.ini",
   "templates/lang/language_de.ini",
   "config/abfall.json",
   "cron/crontab",
   "icons/icon_64.png",
+  "icons/icon_128.png",
+  "icons/icon_256.png",
+  "icons/icon_512.png",
+];
+
+/** Built locally for README / previews; must not ship inside the appliance ZIP. */
+const disallowedInZip = [
+  /^icons\/icon_source.*\.svg$/i,
+  /^icons\/icon_with_text_\d+\.png$/i,
 ];
 
 const missing = mustHave.filter((f) => !list.includes(f));
 if (missing.length) {
   console.error("ZIP missing required plugin files:\n" + missing.map((m) => `  - ${m}`).join("\n"));
+  process.exit(1);
+}
+
+const leaked = list.filter((e) => disallowedInZip.some((rx) => rx.test(e)));
+if (leaked.length) {
+  console.error(
+    "ZIP must not ship icon sources / alternate rasters (keep repo lean on the box):\n" +
+      leaked.map((e) => `  - ${e}`).join("\n"),
+  );
   process.exit(1);
 }
 

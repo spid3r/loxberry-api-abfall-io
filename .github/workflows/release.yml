@@ -1,4 +1,11 @@
 # Runs semantic-release: version bump, CHANGELOG, Git tag, GitHub Release + ZIP asset.
+#
+# - main → stable semver (release.cfg updated; GitHub Release, notmarked prerelease).
+# - beta → prereleases (1.x.y-beta.n; prerelease.cfg updated; GitHub pre-release asset).
+#
+# Beta users: enable prerelease updates on the LoxBerry plugin; plugin.cfg PRERELEASECFG
+# points at raw `beta/prerelease.cfg`, which only changes when a beta release lands.
+#
 # No PAT required: the default GITHUB_TOKEN has enough scope when job permissions
 # are set to contents: write (see below). Do not set a restrictive workflow-level
 # "permissions: contents: read" — it can block release creation.
@@ -6,7 +13,7 @@ name: Release
 
 on:
   push:
-    branches: [main]
+    branches: [main, beta]
 
 jobs:
   release:
@@ -15,9 +22,9 @@ jobs:
       contents: write
       issues: write
       pull-requests: write
-    # Optional: only one release job at a time (two pushes in quick succession)
+    # One release lane per branch (main and beta can both tag without cancelling each other)
     concurrency:
-      group: semantic-release
+      group: semantic-release-${{ github.ref_name }}
       cancel-in-progress: false
 
     steps:
