@@ -1,3 +1,7 @@
+## [1.4.1-beta.4](https://github.com/spid3r/loxberry-api-abfall-io/compare/v1.4.1-beta.3...v1.4.1-beta.4) (2026-05-02)
+
+* fix: always resolve user config under loxberry central paths
+
 ## [1.4.1-beta.3](https://github.com/spid3r/loxberry-api-abfall-io/compare/v1.4.1-beta.2...v1.4.1-beta.3) (2026-05-02)
 
 * fix(beta-release): skip when no releasable or merge commits since last tag
