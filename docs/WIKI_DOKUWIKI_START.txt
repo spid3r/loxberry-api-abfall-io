@@ -3,6 +3,10 @@
 ++++ Version History |
 **Version 1.4.1**
 
+  * fix(beta-release): skip when no releasable or merge commits since last tag
+
+**Version 1.4.1**
+
   * fix(release): pin beta semver via patch-package (SR verifyRelease uses cloneDeep)
   * fix: trigger beta release to verify pinned prerelease semver
   * fix(release): pin beta builds to stable core; document policy
@@ -19,10 +23,6 @@
 **Version 1.4.0**
 
   * **release:** enable LoxBerry plugin autoupdate via release cfg (9d2258e)
-
-**Version 1.3.0**
-
-  * **docs:** add live LoxBerry screenshots to wiki output (3d69e32)
 
 Ältere Releases, Änderungsnotizen sowie die **ZIP‑Pakete** findest du bei **[[https://github.com/spid3r/loxberry-api-abfall-io/releases|GitHub Releases]]**. Der **Quelltext** liegt im **[[https://github.com/spid3r/loxberry-api-abfall-io|Repository]]**.
 
