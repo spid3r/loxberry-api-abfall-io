@@ -1,6 +1,17 @@
 ﻿====== Abfall IO / Abfallabholung (api.abfall.io) ======
 
 ++++ Version History |
+**Version 1.4.2**
+
+  * always resolve user config under loxberry central paths (1236379)
+  * **beta-release:** skip when no releasable or merge commits since last tag (7fff90d)
+  * **plugin:** persist userdata across LoxBerry upgrades (c70e3fa)
+  * **readme:** correct markdown line break in beta pilot note (2307023)
+  * **release:** omit bundled abfall.json from plugin ZIP (92a9aff)
+  * **release:** pin beta builds to stable core; document policy (2f3eae9)
+  * **release:** pin beta semver via patch-package (SR verifyRelease uses cloneDeep) (810c3eb)
+  * trigger beta release to verify pinned prerelease semver (31fb609)
+
 **Version 1.4.1**
 
   * fix(plugin): persist userdata across LoxBerry upgrades
@@ -16,13 +27,6 @@
 **Version 1.4.1**
 
   * fix(beta-release): skip when no releasable or merge commits since last tag
-
-**Version 1.4.1**
-
-  * fix(release): pin beta semver via patch-package (SR verifyRelease uses cloneDeep)
-  * fix: trigger beta release to verify pinned prerelease semver
-  * fix(release): pin beta builds to stable core; document policy
-  * fix(readme): correct markdown line break in beta pilot note
 
 Ältere Releases, Änderungsnotizen sowie die **ZIP‑Pakete** findest du bei **[[https://github.com/spid3r/loxberry-api-abfall-io/releases|GitHub Releases]]**. Der **Quelltext** liegt im **[[https://github.com/spid3r/loxberry-api-abfall-io|Repository]]**.
 

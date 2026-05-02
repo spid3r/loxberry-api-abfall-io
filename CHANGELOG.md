@@ -1,3 +1,17 @@
+## [1.4.2](https://github.com/spid3r/loxberry-api-abfall-io/compare/v1.4.1...v1.4.2) (2026-05-02)
+
+
+### Bug Fixes
+
+* always resolve user config under loxberry central paths ([1236379](https://github.com/spid3r/loxberry-api-abfall-io/commit/1236379bb92cd7ff19a7567edcf91a20a81e7e7d))
+* **beta-release:** skip when no releasable or merge commits since last tag ([7fff90d](https://github.com/spid3r/loxberry-api-abfall-io/commit/7fff90dc4bb2f893bfd4a6be82682bf6db415315))
+* **plugin:** persist userdata across LoxBerry upgrades ([c70e3fa](https://github.com/spid3r/loxberry-api-abfall-io/commit/c70e3fac3787b9527c4c4e63396bdf366aa438e8))
+* **readme:** correct markdown line break in beta pilot note ([2307023](https://github.com/spid3r/loxberry-api-abfall-io/commit/2307023a37de3b2756f8321f5cd96387f330507c))
+* **release:** omit bundled abfall.json from plugin ZIP ([92a9aff](https://github.com/spid3r/loxberry-api-abfall-io/commit/92a9affe2746e8e0868fccfefeb60d6f98d3f61f))
+* **release:** pin beta builds to stable core; document policy ([2f3eae9](https://github.com/spid3r/loxberry-api-abfall-io/commit/2f3eae92e74ba12922975b5ff7397cd5158eb9f3))
+* **release:** pin beta semver via patch-package (SR verifyRelease uses cloneDeep) ([810c3eb](https://github.com/spid3r/loxberry-api-abfall-io/commit/810c3ebd9dae863e23ea98ed8f6b2aac51447c83))
+* trigger beta release to verify pinned prerelease semver ([31fb609](https://github.com/spid3r/loxberry-api-abfall-io/commit/31fb609ea4c2aa976cca6778b791c6f3491d7b24))
+
 ## [1.4.1-beta.6](https://github.com/spid3r/loxberry-api-abfall-io/compare/v1.4.1-beta.5...v1.4.1-beta.6) (2026-05-02)
 
 * fix(plugin): persist userdata across LoxBerry upgrades
