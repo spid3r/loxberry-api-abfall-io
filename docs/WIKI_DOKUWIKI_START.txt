@@ -48,7 +48,22 @@ Das Plugin liefert **Abfuhrtermine** über die öffentliche Schnittstelle **[[ht
 
 ===== Download =====
 
-[[https://github.com/spid3r/loxberry-api-abfall-io/releases|ZIP der aktuellen Version (GitHub Releases)]] — Versionsnummer und Änderungen siehst du auf der gleichen Seite.
+[[https://github.com/spid3r/loxberry-api-abfall-io/releases|ZIP der aktuellen Stable-Version (GitHub Releases)]] — Versionsnummer und Änderungen siehst du auf der gleichen Seite. **Vorschau-Builds (Pre-Releases)** gibt es ebenfalls dort; Hinweise unter **„Pre-Releases und Autoupdate (Beta)“**.
+
+
+===== Pre-Releases und Autoupdate (Beta) =====
+
+Willst du **Test- oder Zwischenstände** probieren (auf GitHub als **Pre-Release / Beta** gekennzeichnet), geht das mit derselben **ZIP‑Installation** wie bei Stable — nur liegt die Datei unter dem Pre-Release-Eintrag (Asset **loxberry-plugin-abfallio-…-beta….zip**).
+
+**Wichtig zum LoxBerry-Vergleich:** Die Plugin-Verwaltung bewertet Versionen wie üblich nach **SemVer**. Steht bei dir **Stable** %%1.4.1%% installiert, gilt eine **Beta** wie %%1.4.1-beta.2%% formal als **„ältere“ Version** %%1.4.1%% — dann wird **„Pre- und Releases“** allein **kein** automatisches Upgrade von Stable auf diese Beta anbieten. Das ist erwartetes Verhalten, kein Konfigurationsfehler.
+
+**So probierst du Beta sinnvoll aus**
+
+  * **Einmal** die gewünschte **Beta-ZIP** von **[[https://github.com/spid3r/loxberry-api-abfall-io/releases|GitHub Releases]]** (unter **Pre-releases**) laden bzw. die **„Installation von URL“** mit der Direkt‑Link‑URL zur ZIP nutzen ([[https://github.com/spid3r/loxberry-api-abfall-io#readme|Ausführlichere Schritte im README auf GitHub]]).
+  * Danach zeigt das Plugin eine **‑beta‑…** Versionsnummer. Jetzt kannst du in der Plugin-Verwaltung **„Pre- und Releases“** aktivieren — **„Auf Aktualisierungen prüfen“** (oder den **täglichen** Check) erkennt dann **neuere** Betas (**…-beta.N+1**) wie gewohnt.
+  * Für die **stabile** Leitung bleibt die normale Stable‑ZIP unter Releases; Hinweise zur LoxBerry-Autoupdate-Funktion: **[[https://wiki.loxberry.de/loxberry_english/english_faq_and_knowledge_base/automatic_and_manual_plugin_updates|Automatic and manual plugin updates]]** im LoxBerry-Wiki.
+
+Technisch stellt das Plugin zwei Konfig‑URLs bereit (**Stable** über ''release.cfg'' auf ''main'', **Beta** über ''prerelease.cfg'' auf Branch ''beta'') — wenn du Beta nutzt, entscheidest du mit ''Pre- und Releases'', dass LoxBerry die **Beta-INI** auswertet (siehe auch die mitgelieferte ''plugin.cfg'' im ZIP).
 
 
 ===== Installation =====
