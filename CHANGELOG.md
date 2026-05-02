@@ -1,3 +1,10 @@
+## [1.4.1-beta.2](https://github.com/spid3r/loxberry-api-abfall-io/compare/v1.4.1-beta.1...v1.4.1-beta.2) (2026-05-02)
+
+* fix(release): pin beta semver via patch-package (SR verifyRelease uses cloneDeep)
+* fix: trigger beta release to verify pinned prerelease semver
+* fix(release): pin beta builds to stable core; document policy
+* fix(readme): correct markdown line break in beta pilot note
+
 ## [1.4.1](https://github.com/spid3r/loxberry-api-abfall-io/compare/v1.4.0...v1.4.1) (2026-05-02)
 
 
