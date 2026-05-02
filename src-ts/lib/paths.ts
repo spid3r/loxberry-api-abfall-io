@@ -31,6 +31,31 @@ function findRepoRoot(start: string): string {
   return path.resolve(start, "../../..");
 }
 
+/** Cron/env may still contain LoxBerry REPLACELB* tokens after a bad merge. */
+function isUnsetOrPlaceholderEnv(v: string): boolean {
+  const t = (v ?? "").trim();
+  return t.length === 0 || /REPLACELB/i.test(t);
+}
+
+/**
+ * Prefer real paths only: bogus LBHOMEDIR makes us read plugin-tree ./config/
+ * instead of userdata (looks like \"settings wiped\").
+ */
+function normalizedLbhomedir(raw: string): string {
+  const t = isUnsetOrPlaceholderEnv(raw) ? "" : raw.trim();
+  if (!t) return "";
+  try {
+    if (!fs.statSync(t).isDirectory()) return "";
+  } catch {
+    return "";
+  }
+  return t;
+}
+
+function normalizedLbpplugindir(raw: string): string {
+  return isUnsetOrPlaceholderEnv(raw) ? "" : raw.trim();
+}
+
 function inferLoxBerryPluginDir(lbhomedir: string): string {
   if (!lbhomedir) return "";
   const here = path.resolve(thisDir);
@@ -43,8 +68,8 @@ function inferLoxBerryPluginDir(lbhomedir: string): string {
 
 /** Resolved LBHOMEDIR + plugin folder; same rules as {@link resolvePaths}. */
 export function getLoxBerryHomeAndPlugin(): { lbhomedir: string; lbpplugindir: string } {
-  let lbhomedir = process.env.LBHOMEDIR ?? "";
-  let lbpplugindir = process.env.LBPPLUGINDIR ?? "";
+  let lbhomedir = normalizedLbhomedir(process.env.LBHOMEDIR ?? "");
+  let lbpplugindir = normalizedLbpplugindir(process.env.LBPPLUGINDIR ?? "");
 
   if (!lbhomedir && fs.existsSync("/opt/loxberry")) {
     lbhomedir = "/opt/loxberry";

@@ -151,9 +151,11 @@ In *Einstellungen* / *Settings*:
 
 - **Fetch interval (hours)** — how often `fetch.cjs` may hit the upstream API.
   The default for a new install is **6 hours** (override in the UI or locally in
-  `config/abfall.json` when developing from a git checkout). Release ZIP builds
-  **omit** `config/abfall.json` on purpose so a plugin upgrade does **not**
-  overwrite `…/config/plugins/abfallio/abfall.json` on the appliance.
+  `config/abfall.json` when developing from a git checkout).   Release ZIP builds
+  **omit** `config/abfall.json` on purpose so the archive itself does **not**
+  overwrite `…/config/plugins/abfallio/abfall.json`. LoxBerry also **recreates plugin
+  trees on upgrade**, so **`preupgrade.sh` / `postupgrade.sh`** back up and restore
+  `config/plugins/abfallio` and `data/plugins/abfallio` (region, cache, MQTT, etc.).
 - **Fuzz factor (± minutes)** — random offset added to the interval so 1000
   appliances don't all poll at HH:00:00. Defaults to ±30 min, set to 0 to
   disable.

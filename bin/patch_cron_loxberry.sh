@@ -6,6 +6,9 @@
 : "${LBHOMEDIR?}"
 : "${ARGV2?}"
 
+# LBPPLUGINDIR token should match PLUGIN.FOLDER ($PFOLDER / $3), not necessarily PLUGIN.NAME ($2).
+_PLUGDIR="${PFOLDER:-$ARGV2}"
+
 CRONFILE="$LBHOMEDIR/system/cron/cron.d/$ARGV2"
 if [ ! -f "$CRONFILE" ]; then
   return 0
@@ -15,10 +18,10 @@ if ! grep -q 'REPLACELB' "$CRONFILE" 2>/dev/null; then
 fi
 
 echo "<WARN> Cron still contains REPLACELB* placeholders; patching paths..."
-LOGDIR="$LBHOMEDIR/log/plugins/$ARGV2"
+LOGDIR="$LBHOMEDIR/log/plugins/$_PLUGDIR"
 TMPFILE="${CRONFILE}.tmp.$$"
 if ! sed -e "s|REPLACELBPHOMEDIR|$LBHOMEDIR|g" \
-     -e "s|REPLACELBPPLUGINDIR|$ARGV2|g" \
+     -e "s|REPLACELBPPLUGINDIR|$_PLUGDIR|g" \
      -e "s|REPLACELBPLOGDIR|$LOGDIR|g" \
      "$CRONFILE" > "$TMPFILE" 2>/dev/null; then
   rm -f "$TMPFILE"

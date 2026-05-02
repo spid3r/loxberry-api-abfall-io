@@ -75,6 +75,24 @@ describe("path resolution", () => {
     }
   });
 
+  it("does not trust REPLACELB* placeholders in LBHOMEDIR / LBPPLUGINDIR from cron", () => {
+    const oldHome = process.env.LBHOMEDIR;
+    const oldPlugin = process.env.LBPPLUGINDIR;
+    process.env.LBHOMEDIR = "REPLACELBPHOMEDIR";
+    process.env.LBPPLUGINDIR = "REPLACELBPPLUGINDIR";
+    try {
+      const paths = resolvePaths();
+      expect(paths.configFile).to.not.include("REPLACELB");
+      expect(paths.configDir).to.not.include("REPLACELBPHOMEDIR");
+      expect(paths.dataDir).to.not.include("REPLACELBPHOMEDIR");
+    } finally {
+      if (oldHome === undefined) delete process.env.LBHOMEDIR;
+      else process.env.LBHOMEDIR = oldHome;
+      if (oldPlugin === undefined) delete process.env.LBPPLUGINDIR;
+      else process.env.LBPPLUGINDIR = oldPlugin;
+    }
+  });
+
   it("merged cron probe reports no placeholder when cron is expanded", () => {
     const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "lbcron2-"));
     const pluginName = "abfallio";

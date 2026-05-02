@@ -90,7 +90,9 @@ if (bad.length) {
 const mustHave = [
   "plugin.cfg",
   "preinstall.sh",
+  "preupgrade.sh",
   "postinstall.sh",
+  "postupgrade.sh",
   "postroot.sh",
   "bin/patch_cron_loxberry.sh",
   "bin/abfall_api.cjs",
