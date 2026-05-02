@@ -468,10 +468,20 @@ Branch **`beta`** is the preview line. **`beta-release.yml`** runs [`scripts/bet
 1. **Git:** create or update `beta` from `main`, push `beta` (`git checkout -b beta && git push -u origin beta` the first time).
 2. Land preview work on **`beta`**. A push runs the beta workflow when there are **new commits since the last beta tag** (or since the last stable tag if there is no beta yet) and the range is **not** only `chore(release): … [skip ci]` commits from the bot. Preview **`CHANGELOG.md`** entries for beta are short summaries; full conventional changelog semantics apply on **`main`**.
 3. **Old or mistaken pre-releases:** delete the GitHub **Pre-release** and tag manually if needed; nothing auto-deletes them.
-4. On the appliance, enable **prereleases / beta** so LoxBerry reads `PRERELEASECFG` ([LoxBerry plugin autoupdate](https://wiki.loxberry.de/loxberry_development/en_plugins_autoupdate)).
+4. On the appliance, enable **prereleases / beta** so LoxBerry reads `PRERELEASECFG` ([LoxBerry: automatic and manual plugin updates](https://wiki.loxberry.de/loxberry_english/english_faq_and_knowledge_base/automatic_and_manual_plugin_updates)).
 5. **Stable promotion:** merge `beta` into `main` (merge commit preferred). A push to **`main`** runs semantic-release and produces **`vX.Y.Z`** plus **`release.cfg`**. If you want **`release.cfg`** on `beta` to mirror stable for cosmetics, run **`git checkout main -- release.cfg`** on `beta` and commit (`chore`).
 
 **LoxBerry autoupdate + SemVer:** If the appliance shows **Version 1.4.1** (stable) and **“Up-To-Date”** even with **“Pre- and Releases”** enabled, that is expected. Per [SemVer 2.0](https://semver.org/), a prerelease such as **`1.4.1-beta.2` has lower precedence than the release `1.4.1`**, so the updater does **not** treat the beta as “newer” than the stable you already have. You **will** get beta-to-beta updates (e.g. **`1.4.1-beta.1` → `1.4.1-beta.2`**) once the plugin is on a beta line, or when **`prerelease.cfg`’s `VERSION`** is semver-**greater** than the installed one (e.g. **`1.4.2-beta.1` > `1.4.1`**). To try a preview **without** changing that ordering, install the beta ZIP manually from the GitHub Pre-release asset URL.
+
+#### Trying the beta channel on LoxBerry (first install → updates visible)
+
+1. **GitHub** — open [Releases](https://github.com/spid3r/loxberry-api-abfall-io/releases), switch to **“Pre-releases”**, pick the latest **`v…-beta…`** entry.
+2. **Copy the plugin ZIP asset URL** (the file named `loxberry-plugin-abfallio-….zip` under **Assets** — same pattern as stable: `https://github.com/spid3r/loxberry-api-abfall-io/releases/download/vX.Y.Z-beta.N/loxberry-plugin-abfallio-X.Y.Z-beta.N.zip`).
+3. **LoxBerry** — Plugin Management → install **from URL** (or upload the ZIP), enter **SecurePIN**. This replaces or installs the plugin so the overview shows **`X.Y.Z-beta.N`** (not the stable-only number).
+4. Set **Automatic updates** to **“Pre- and Releases”** for that plugin, then **“Re-Check for Updates”** (or wait for the daily check). From then on, each new **`X.Y.Z-beta.(N+1)`** in `prerelease.cfg` is **semver-greater** than the installed beta and will show as a normal update / notification flow.
+5. **Optional check:** open [`beta/prerelease.cfg`](https://raw.githubusercontent.com/spid3r/loxberry-api-abfall-io/beta/prerelease.cfg) in the browser — `VERSION` and `ARCHIVEURL` must match the ZIP you expect.
+
+**Why not only “turn on Pre- and Releases” on stable?** That only tells LoxBerry *which INI to read*; it does not change SemVer. Stable **`1.4.1`** stays “newer than” **`1.4.1-beta.*`**, so there is nothing to auto-offer until the installed version itself is a beta (or the offered prerelease version is numerically above stable, e.g. **`1.4.2-beta.1`**).
 
 Until the first prerelease succeeds, fetching `beta/prerelease.cfg` returns whatever is committed on **beta**
 (typically the same fallback as today). After workflow runs on `beta`, that file references the newest **beta** asset URL.
