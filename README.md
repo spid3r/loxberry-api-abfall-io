@@ -459,8 +459,8 @@ This repository uses [semantic-release](https://github.com/semantic-release/sema
   - regenerate `CHANGELOG.md`
   - create a Git tag and a **GitHub Release** with the **plugin ZIP** attached (`dist/loxberry-plugin-abfallio-*.zip`)
   - **`main`** — stable semver (e.g. `1.6.0`); **`release.cfg`** on `main` is updated for autoupdates.
-  - **`beta`** — prereleases tagged `x.y.z-beta.N`, marked **Pre-release** on GitHub; only **`prerelease.cfg`** on branch `beta` is updated (`PRERELEASECFG` in [`plugin.cfg`](plugin.cfg) points at `raw.githubusercontent.com/.../beta/prerelease.cfg`).
-- Merge **`beta` → `main`** with a normal PR when you are ready to ship stable; changelog and versioning follow semantic-release’s usual prerelease→stable flow.
+  - **`beta`** — prereleases tagged **`{latest-stable}-beta.N`** (only **`N`** increases while stable is unchanged). Marked **Pre-release** on GitHub; only **`prerelease.cfg`** on branch `beta` is updated (`PRERELEASECFG` in [`plugin.cfg`](plugin.cfg) points at `raw.githubusercontent.com/.../beta/prerelease.cfg`). Implemented via **`./scripts/sr-pin-beta-prerelease.mjs`** because upstream semantic-release would otherwise bump the core (`1.4.1` → **`1.4.2-beta.1`** after a `fix:`) by design.
+- Merge **`beta` → `main`** with a normal PR when you are ready to ship stable; changelog and versioning follow semantic-release’s usual prerelease→stable flow (**`main`** computes the real **patch/minor/major** from commits).
 - It does **not** publish to npm.
 
 [Dependabot](.github/dependabot.yml) can suggest updates for GitHub Actions and npm packages; merge those PRs to stay current.
@@ -471,9 +471,10 @@ Branch **`beta`** is the prerelease line (common convention alongside `alpha`/`r
 is fine too if you rename consistently in `.releaserc.json` and `plugin.cfg`).
 
 1. **Git:** create or update `beta` from `main`, push `beta` (`git checkout -b beta && git push -u origin beta` the first time).
-2. Put **preview work** (`feat:` / `fix:` as needed for a version bump) on `beta`; each push runs the same semantic-release workflow and may publish **`vX.Y.Z-beta.M`** ZIPs **only while there are unreleased conventional commits**.
-3. On the appliance, enable **prereleases / beta** for this plugin so LoxBerry reads `PRERELEASECFG` ([LoxBerry plugin autoupdate](https://wiki.loxberry.de/loxberry_development/en_plugins_autoupdate) — prerelease CFG is officially supported alongside `RELEASECFG`).
-4. **Stable promotion:** merge `beta` into `main` (merge commit preferred). A subsequent push to `main` produces a normal release **`vX.Y.0`** (or patch) and refreshes **`release.cfg`** on `main`.
+2. Put **preview work** on **`beta`**; each push runs the same semantic-release workflow and may publish **`v{stable}-beta.M`** ZIPs **only while there are unreleased conventional commits**. **`feat:`** / **`fix:`** still matter for changelog grouping, but the **released** semver **core** advances only after **`main`** runs semantic-release.
+3. **Old or mistaken pre-releases** (wrong tag/asset): deleting the GitHub **Pre-release** and its tag is optional and manual—nothing here auto-deletes them. Prefer removing tags that confuse users (**`beta` builds after the fix will not reuse an old numbering scheme** once stable tags are authoritative). Appliances that already downloaded a ZIP keep that file until the next update.
+4. On the appliance, enable **prereleases / beta** for this plugin so LoxBerry reads `PRERELEASECFG` ([LoxBerry plugin autoupdate](https://wiki.loxberry.de/loxberry_development/en_plugins_autoupdate) — prerelease CFG is officially supported alongside `RELEASECFG`).
+5. **Stable promotion:** merge `beta` into `main` (merge commit preferred). A subsequent push to `main` produces a normal release **`vX.Y.0`** (or patch) and refreshes **`release.cfg`** on `main`.
    On `beta`, semantic-release only updates **`prerelease.cfg`**; if you still want **`release.cfg`**
    checked in there to mirror stable (cosmetic-only), periodically run
    **`git checkout main -- release.cfg`** on `beta` and commit (`chore`).
