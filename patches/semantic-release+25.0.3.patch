@@ -1,0 +1,74 @@
+diff --git a/node_modules/semantic-release/lib/get-next-version.js b/node_modules/semantic-release/lib/get-next-version.js
+index c657f10..a14b9c3 100644
+--- a/node_modules/semantic-release/lib/get-next-version.js
++++ b/node_modules/semantic-release/lib/get-next-version.js
+@@ -1,26 +1,52 @@
+ import semver from "semver";
+ import { FIRST_RELEASE, FIRSTPRERELEASE } from "./definitions/constants.js";
+-import { getLatestVersion, highest, isSameChannel, tagsToVersions } from "./utils.js";
++import { tagsToVersions } from "./utils.js";
+ 
+-export default ({ branch, nextRelease: { type, channel }, lastRelease, logger }) => {
++/** @param {{ prerelease: string | true; name: string }} branch */
++function prereleaseId(branch) {
++  return typeof branch.prerelease === "string" ? branch.prerelease : branch.name;
++}
++
++function coreTriple(version) {
++  const parsed = semver.parse(version);
++  return parsed ? `${parsed.major}.${parsed.minor}.${parsed.patch}` : null;
++}
++
++/**
++ * Pinned prerelease policy (loxberry-api-abfall-io patch): keep semver core at the
++ * newest stable tag; only increment `-{prerelease}.N` until main publishes the next stable.
++ */
++function pinnedPrereleaseVersion(branch, logger) {
++  const pid = prereleaseId(branch);
++  const allValid = [...new Set(tagsToVersions(branch.tags).filter((v) => semver.valid(v)))];
++  const latestStable = allValid.filter((v) => !semver.prerelease(v)).sort(semver.rcompare)[0] ?? null;
++  const baseCore = latestStable ?? FIRST_RELEASE;
++
++  const matching = allValid.filter((v) => {
++    if (!semver.prerelease(v)) return false;
++    const pre = semver.prerelease(v);
++    if (!pre || String(pre[0]) !== String(pid)) return false;
++    return coreTriple(v) === baseCore;
++  });
++
++  const last = matching.sort(semver.rcompare)[0];
++  const version = last ? semver.inc(last, "prerelease", pid) : `${baseCore}-${pid}.${FIRSTPRERELEASE}`;
++
++  logger.log(
++    "[pinned-prerelease] next version %s (stable core base %s, identifier %s)",
++    version,
++    baseCore,
++    pid,
++  );
++
++  return version;
++}
++
++export default ({ branch, nextRelease: { type }, lastRelease, logger }) => {
+   let version;
+   if (lastRelease.version) {
+-    const { major, minor, patch } = semver.parse(lastRelease.version);
+-
+     if (branch.type === "prerelease") {
+-      if (
+-        semver.prerelease(lastRelease.version) &&
+-        lastRelease.channels.some((lastReleaseChannel) => isSameChannel(lastReleaseChannel, channel))
+-      ) {
+-        version = highest(
+-          semver.inc(lastRelease.version, "prerelease"),
+-          `${semver.inc(getLatestVersion(tagsToVersions(branch.tags), { withPrerelease: true }), type)}-${
+-            branch.prerelease
+-          }.${FIRSTPRERELEASE}`
+-        );
+-      } else {
+-        version = `${semver.inc(`${major}.${minor}.${patch}`, type)}-${branch.prerelease}.${FIRSTPRERELEASE}`;
+-      }
++      version = pinnedPrereleaseVersion(branch, logger);
+     } else {
+       version = semver.inc(lastRelease.version, type);
+     }

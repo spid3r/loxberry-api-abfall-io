@@ -7,6 +7,7 @@
   "main": "dist-node/cli/abfall_api.cjs",
   "scripts": {
     "prepare": "husky",
+    "postinstall": "patch-package",
     "build": "node ./scripts/build-bundle.mjs && node ./scripts/mirror-bin-dist.mjs",
     "build:icons": "node ./scripts/resize-plugin-icons.mjs",
     "build:tsc": "npm run typecheck",
@@ -74,6 +75,7 @@
     "husky": "^9.1.7",
     "loxberry-client-library": "^1.2.0",
     "mocha": "^11.7.5",
+    "patch-package": "^8.0.1",
     "semantic-release": "^25.0.3",
     "sharp": "^0.34.5",
     "tsx": "^4.21.0",

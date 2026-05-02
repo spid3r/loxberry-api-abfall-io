@@ -459,7 +459,7 @@ This repository uses [semantic-release](https://github.com/semantic-release/sema
   - regenerate `CHANGELOG.md`
   - create a Git tag and a **GitHub Release** with the **plugin ZIP** attached (`dist/loxberry-plugin-abfallio-*.zip`)
   - **`main`** — stable semver (e.g. `1.6.0`); **`release.cfg`** on `main` is updated for autoupdates.
-  - **`beta`** — prereleases tagged **`{latest-stable}-beta.N`** (only **`N`** increases while stable is unchanged). Marked **Pre-release** on GitHub; only **`prerelease.cfg`** on branch `beta` is updated (`PRERELEASECFG` in [`plugin.cfg`](plugin.cfg) points at `raw.githubusercontent.com/.../beta/prerelease.cfg`). Implemented via **`./scripts/sr-pin-beta-prerelease.mjs`** because upstream semantic-release would otherwise bump the core (`1.4.1` → **`1.4.2-beta.1`** after a `fix:`) by design.
+  - **`beta`** — prereleases tagged **`{latest-stable}-beta.N`** (only **`N`** increases while stable is unchanged). Marked **Pre-release** on GitHub; only **`prerelease.cfg`** on branch `beta` is updated (`PRERELEASECFG` in [`plugin.cfg`](plugin.cfg) points at `raw.githubusercontent.com/.../beta/prerelease.cfg`). Upstream semantic-release would otherwise bump the core after a `fix:` on beta (for example **`1.4.2-beta.1`** while stable is still **`1.4.1`**); this repo applies **`patch-package`** to `semantic-release`’s `get-next-version.js` (see **`patches/semantic-release+25.0.3.patch`**).
 - Merge **`beta` → `main`** with a normal PR when you are ready to ship stable; changelog and versioning follow semantic-release’s usual prerelease→stable flow (**`main`** computes the real **patch/minor/major** from commits).
 - It does **not** publish to npm.
 
