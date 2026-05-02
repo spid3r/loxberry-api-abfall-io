@@ -1,3 +1,7 @@
+## [1.4.1-beta.6](https://github.com/spid3r/loxberry-api-abfall-io/compare/v1.4.1-beta.5...v1.4.1-beta.6) (2026-05-02)
+
+* fix(plugin): persist userdata across LoxBerry upgrades
+
 ## [1.4.1-beta.5](https://github.com/spid3r/loxberry-api-abfall-io/compare/v1.4.1-beta.4...v1.4.1-beta.5) (2026-05-02)
 
 * fix(release): omit bundled abfall.json from plugin ZIP

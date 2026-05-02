@@ -3,6 +3,10 @@
 ++++ Version History |
 **Version 1.4.1**
 
+  * fix(plugin): persist userdata across LoxBerry upgrades
+
+**Version 1.4.1**
+
   * fix(release): omit bundled abfall.json from plugin ZIP
 
 **Version 1.4.1**
@@ -19,10 +23,6 @@
   * fix: trigger beta release to verify pinned prerelease semver
   * fix(release): pin beta builds to stable core; document policy
   * fix(readme): correct markdown line break in beta pilot note
-
-**Version 1.4.1**
-
-  * **icons:** update plugin icons and enhance icon generation script (dbb79d2)
 
 Ältere Releases, Änderungsnotizen sowie die **ZIP‑Pakete** findest du bei **[[https://github.com/spid3r/loxberry-api-abfall-io/releases|GitHub Releases]]**. Der **Quelltext** liegt im **[[https://github.com/spid3r/loxberry-api-abfall-io|Repository]]**.
 
