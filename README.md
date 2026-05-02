@@ -34,12 +34,11 @@ the maintainers. It is a **community best-effort** tool using **publicly accessi
   from `plugins/.../index.php?format=json` (without `?format=json`, the same URL
   shows a simple help page in a browser). Loxone **flat text** from
   `webfrontend/html/loxone.php`
-- Plugin list icon: `plugin.cfg` references `webfrontend/html/icon_64.png`;
-  all four `icons/icon_{64,128,256,512}.png` are generated before packaging from
-  `icons/icon_source_without_text.svg` (see *Building* below). The text variant
-  (`icon_source.svg` → `icon_with_text_*.png`) is built locally for previews only;
-  it is **not** included in the release ZIP (the appliance only needs the four
-  `icons/icon_*.png` files plus the two `icon_64.png` copies under `webfrontend/`).
+- Plugin list icon: core copies **`icons/icon_*.png`** (with label from
+  **`icon_source.svg`**) into **`/system/images/icons/abfallio/`**. The embedded admin
+  header uses **`webfrontend/htmlauth/icon_64.png`** (**`icon_source_without_text.svg`**,
+  no label; see *Building* below). `ICON=icon_64.png` in `plugin.cfg` matches the preview
+  file name convention.
 - Optional category filtering
 - Optional **MQTT publishing** to LoxBerry's built-in broker, with
   auto-detection of broker credentials from
@@ -271,9 +270,9 @@ npm install
 npm run release:zip
 ```
 
-This runs `build:icons` (rasterises the Inkscape masters `icons/icon_source_without_text.svg`
-and `icons/icon_source.svg` into squircle PNGs at 64/128/256/512, writes
-`webfrontend/html/icon_64.png` and `webfrontend/htmlauth/icon_64.png` for the management UI),
+This runs `build:icons` (rasterises `icon_source.svg` into **`icons/icon_*.png`** for the system
+/overview, and `icon_source_without_text.svg` into **`webfrontend/**/icon_64.png`** for the
+embedded admin header),
 `build` (esbuild bundles for `bin/`), then `build-release` (ZIP).
 
 The artifact lands in `dist/loxberry-plugin-abfallio-<version>.zip` and is
@@ -282,8 +281,8 @@ the file you upload to LoxBerry. The build excludes `src-ts/`, `test-ts/`,
 folder.
 
 **Icon art:** waste / wheelie-bin + collection calendar (fits `api.abfall.io`).
-Edit `icons/icon_source_without_text.svg` (plugin icons) and/or
-`icons/icon_source.svg` (with label), then run `npm run build:icons` before a release.
+Edit `icons/icon_source.svg` (labelled overview icon set) and/or
+`icons/icon_source_without_text.svg` (header glyph), then run `npm run build:icons` before a release.
 
 ## Optional live appliance testing
 
@@ -408,8 +407,8 @@ Playwright cache.
 - Requires Node.js ≥ 18 (LoxBerry 3 baseline).
 - `preinstall.sh` performs a Node runtime version check.
 - The release ZIP excludes dev-only folders, Inkscape **SVG** masters, and the
-  optional **`icon_with_text_*.png`** set so the appliance footprint stays small;
-  only the LoxBerry icon PNG set under `icons/` and `webfrontend/**/icon_64.png`
+  large Inkscape **`icon_source*.svg`** sources;
+  shipped PNGs are only **`icons/icon_*.png`** and **`webfrontend/**/icon_64.png`**
   is bundled.
 
 ## GitHub Actions: secrets and tokens
@@ -494,9 +493,9 @@ first**, or temporarily move them off `main` before cutting stable.
 2. **CI** — every push/PR runs tests and a release-ZIP build; no secrets are required. Do not commit `.env` or LoxBerry credentials (they are gitignored).
 3. **Releases** — merge to `default` / `main` with [Conventional Commits](https://www.conventionalcommits.org/) (e.g. `feat:`, `fix:`, `perf:`) so `semantic-release` can compute a version, create a **Git tag** and a **GitHub Release**, and upload the `loxberry-plugin-abfallio-*.zip` asset. The workflow uses the built-in `GITHUB_TOKEN` only; no personal access token and no npm publish.
 4. The **install URL** for LoxBerry “install from URL” is the *asset* link on the release, e.g. `https://github.com/ORG/REPO/releases/download/vX.Y.Z/loxberry-plugin-abfallio-X.Y.Z.zip` — not the “Source code” zip.
-5. **Plugin list icon** — `ICON=icon_64.png` and the generated `icons/icon_*.png`
-   (from `npm run build:icons`). **Reinstall or update** the plugin on the LoxBerry
-   so the core copies them into `/system/images/icons/abfallio/`.
+5. **Plugin icons** — `ICON=icon_64.png`; **`icons/icon_*.png`** (labelled → overview in
+   `/system/images/icons/abfallio/`) and **`webfrontend/**/icon_64.png`** (glyph-only admin
+   thumb). Run `npm run build:icons` before releasing; reinstall/update the plugin to refresh.
 
 Local preview:
 
