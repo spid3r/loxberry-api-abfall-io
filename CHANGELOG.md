@@ -1,4 +1,34 @@
+## [1.4.1-beta.6](https://github.com/spid3r/loxberry-api-abfall-io/compare/v1.4.1-beta.5...v1.4.1-beta.6) (2026-05-02)
+
+* fix(plugin): persist userdata across LoxBerry upgrades
+
+## [1.4.1-beta.5](https://github.com/spid3r/loxberry-api-abfall-io/compare/v1.4.1-beta.4...v1.4.1-beta.5) (2026-05-02)
+
+* fix(release): omit bundled abfall.json from plugin ZIP
+
+## [1.4.1-beta.4](https://github.com/spid3r/loxberry-api-abfall-io/compare/v1.4.1-beta.3...v1.4.1-beta.4) (2026-05-02)
+
+* fix: always resolve user config under loxberry central paths
+
+## [1.4.1-beta.3](https://github.com/spid3r/loxberry-api-abfall-io/compare/v1.4.1-beta.2...v1.4.1-beta.3) (2026-05-02)
+
+* fix(beta-release): skip when no releasable or merge commits since last tag
+
+## [1.4.1-beta.2](https://github.com/spid3r/loxberry-api-abfall-io/compare/v1.4.1-beta.1...v1.4.1-beta.2) (2026-05-02)
+
+* fix(release): pin beta semver via patch-package (SR verifyRelease uses cloneDeep)
+* fix: trigger beta release to verify pinned prerelease semver
+* fix(release): pin beta builds to stable core; document policy
+* fix(readme): correct markdown line break in beta pilot note
+
 ## [1.4.1](https://github.com/spid3r/loxberry-api-abfall-io/compare/v1.4.0...v1.4.1) (2026-05-02)
+
+
+### Bug Fixes
+
+* **icons:** update plugin icons and enhance icon generation script ([dbb79d2](https://github.com/spid3r/loxberry-api-abfall-io/commit/dbb79d22c1062e28e7191c5f02361e5fabc40ea4))
+
+## [1.4.1-beta.1](https://github.com/spid3r/loxberry-api-abfall-io/compare/v1.4.0...v1.4.1-beta.1) (2026-05-02)
 
 
 ### Bug Fixes

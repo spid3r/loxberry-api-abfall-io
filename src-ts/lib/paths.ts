@@ -31,6 +31,31 @@ function findRepoRoot(start: string): string {
   return path.resolve(start, "../../..");
 }
 
+/** Cron/env may still contain LoxBerry REPLACELB* tokens after a bad merge. */
+function isUnsetOrPlaceholderEnv(v: string): boolean {
+  const t = (v ?? "").trim();
+  return t.length === 0 || /REPLACELB/i.test(t);
+}
+
+/**
+ * Prefer real paths only: bogus LBHOMEDIR makes us read plugin-tree ./config/
+ * instead of userdata (looks like \"settings wiped\").
+ */
+function normalizedLbhomedir(raw: string): string {
+  const t = isUnsetOrPlaceholderEnv(raw) ? "" : raw.trim();
+  if (!t) return "";
+  try {
+    if (!fs.statSync(t).isDirectory()) return "";
+  } catch {
+    return "";
+  }
+  return t;
+}
+
+function normalizedLbpplugindir(raw: string): string {
+  return isUnsetOrPlaceholderEnv(raw) ? "" : raw.trim();
+}
+
 function inferLoxBerryPluginDir(lbhomedir: string): string {
   if (!lbhomedir) return "";
   const here = path.resolve(thisDir);
@@ -43,8 +68,8 @@ function inferLoxBerryPluginDir(lbhomedir: string): string {
 
 /** Resolved LBHOMEDIR + plugin folder; same rules as {@link resolvePaths}. */
 export function getLoxBerryHomeAndPlugin(): { lbhomedir: string; lbpplugindir: string } {
-  let lbhomedir = process.env.LBHOMEDIR ?? "";
-  let lbpplugindir = process.env.LBPPLUGINDIR ?? "";
+  let lbhomedir = normalizedLbhomedir(process.env.LBHOMEDIR ?? "");
+  let lbpplugindir = normalizedLbpplugindir(process.env.LBPPLUGINDIR ?? "");
 
   if (!lbhomedir && fs.existsSync("/opt/loxberry")) {
     lbhomedir = "/opt/loxberry";
@@ -98,11 +123,15 @@ export function resolvePaths(): ResolvedPaths {
   let dataDir: string;
   let logDir: string;
 
-  const lbPluginConfig = lbpplugindir
-    ? path.join(lbhomedir, "config", "plugins", lbpplugindir)
-    : "";
-  if (lbpplugindir && fs.existsSync(lbPluginConfig)) {
-    configDir = lbPluginConfig;
+  /**
+   * LoxBerry stores user config under $LBHOMEDIR/config/plugins/<PFOLDER>/ and data under
+   * data/plugins/<PFOLDER>/. These paths must be used whenever env is set — do not require
+   * the directory to exist first; otherwise Node fall back to the plugin extract (./config)
+   * and can diverge from PHP (which always uses the central config path), which looks like
+   * "settings lost" after updates.
+   */
+  if (lbhomedir && lbpplugindir) {
+    configDir = path.join(lbhomedir, "config", "plugins", lbpplugindir);
     dataDir = path.join(lbhomedir, "data", "plugins", lbpplugindir);
     logDir = path.join(lbhomedir, "log", "plugins", lbpplugindir);
   } else {

@@ -28,6 +28,28 @@ describe("path resolution", () => {
     }
   });
 
+  it("uses LoxBerry paths when env set even if config/plugins/<name>/ does not exist yet", () => {
+    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "lbpaths-nodir-"));
+    const pluginName = "abfallio";
+    const pluginConfigDir = path.join(tempRoot, "config", "plugins", pluginName);
+
+    const oldHome = process.env.LBHOMEDIR;
+    const oldPlugin = process.env.LBPPLUGINDIR;
+    process.env.LBHOMEDIR = tempRoot;
+    process.env.LBPPLUGINDIR = pluginName;
+    try {
+      const paths = resolvePaths();
+      expect(paths.configDir).to.equal(pluginConfigDir);
+      expect(paths.configFile).to.equal(path.join(pluginConfigDir, "abfall.json"));
+    } finally {
+      if (oldHome === undefined) delete process.env.LBHOMEDIR;
+      else process.env.LBHOMEDIR = oldHome;
+      if (oldPlugin === undefined) delete process.env.LBPPLUGINDIR;
+      else process.env.LBPPLUGINDIR = oldPlugin;
+    }
+    fs.rmSync(tempRoot, { recursive: true, force: true });
+  });
+
   it("merged cron probe detects REPLACELB placeholder", () => {
     const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "lbcron-"));
     const pluginName = "abfallio";
@@ -45,6 +67,24 @@ describe("path resolution", () => {
       expect(p).to.not.equal(null);
       expect(p!.file_exists).to.equal(true);
       expect(p!.replacelb_placeholder_found).to.equal(true);
+    } finally {
+      if (oldHome === undefined) delete process.env.LBHOMEDIR;
+      else process.env.LBHOMEDIR = oldHome;
+      if (oldPlugin === undefined) delete process.env.LBPPLUGINDIR;
+      else process.env.LBPPLUGINDIR = oldPlugin;
+    }
+  });
+
+  it("does not trust REPLACELB* placeholders in LBHOMEDIR / LBPPLUGINDIR from cron", () => {
+    const oldHome = process.env.LBHOMEDIR;
+    const oldPlugin = process.env.LBPPLUGINDIR;
+    process.env.LBHOMEDIR = "REPLACELBPHOMEDIR";
+    process.env.LBPPLUGINDIR = "REPLACELBPPLUGINDIR";
+    try {
+      const paths = resolvePaths();
+      expect(paths.configFile).to.not.include("REPLACELB");
+      expect(paths.configDir).to.not.include("REPLACELBPHOMEDIR");
+      expect(paths.dataDir).to.not.include("REPLACELBPHOMEDIR");
     } finally {
       if (oldHome === undefined) delete process.env.LBHOMEDIR;
       else process.env.LBHOMEDIR = oldHome;

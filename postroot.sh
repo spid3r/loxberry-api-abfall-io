@@ -12,6 +12,7 @@ export LBHOMEDIR
 export ARGV2
 
 PFOLDER="${ARGV3:-$ARGV2}"
+export PFOLDER
 PATCHCRON="$LBHOMEDIR/bin/plugins/$PFOLDER/patch_cron_loxberry.sh"
 chmod +x "$PATCHCRON" 2>/dev/null || true
 if [ -f "$PATCHCRON" ]; then

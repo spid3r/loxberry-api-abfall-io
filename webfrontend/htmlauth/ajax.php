@@ -111,6 +111,13 @@ function json_response($data) {
     exit;
 }
 
+/** Ensure central LoxBerry config dir exists ($LBHOMEDIR/config/plugins/<plugin>/). */
+function abfallio_ensure_plugin_config_dir($plugin_config_dir) {
+    if ($plugin_config_dir && !is_dir($plugin_config_dir)) {
+        @mkdir($plugin_config_dir, 0775, true);
+    }
+}
+
 switch ($action) {
 
     case 'search_street':
@@ -177,6 +184,7 @@ switch ($action) {
 
     case 'save_location':
         $config_file = $plugin_config . '/abfall.json';
+        abfallio_ensure_plugin_config_dir($plugin_config);
         $config = file_exists($config_file) ? json_decode(file_get_contents($config_file), true) : [];
         $config['location'] = $config['location'] ?? [];
         $config['location']['f_id_kommune'] = $_POST['kommune_id'] ?? '';
@@ -190,6 +198,7 @@ switch ($action) {
 
     case 'reset_location':
         $config_file = $plugin_config . '/abfall.json';
+        abfallio_ensure_plugin_config_dir($plugin_config);
         $config = file_exists($config_file) ? (json_decode(file_get_contents($config_file), true) ?: []) : [];
         $config['location'] = [];
         file_put_contents($config_file, json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
@@ -198,6 +207,7 @@ switch ($action) {
 
     case 'save_settings':
         $config_file = $plugin_config . '/abfall.json';
+        abfallio_ensure_plugin_config_dir($plugin_config);
         $config = file_exists($config_file) ? (json_decode(file_get_contents($config_file), true) ?: []) : [];
         $sk = trim((string) ($_POST['service_key'] ?? ''));
         if ($sk !== '' && !preg_match('/^[a-fA-F0-9]{32}$/', $sk)) {

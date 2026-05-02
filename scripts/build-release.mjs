@@ -44,6 +44,9 @@ const excludes = [
   /^\.gitignore$/,
   /^\.env$/,
   /^\.env\./, // e.g. .env.example, .env.local
+  /* User data: LoxBerry merges `config/` into $LBHOMEDIR/config/plugins/<PFOLDER>/ —
+   * shipping abfall.json wipes service_key/location on every update. */
+  /^config\/abfall\.json$/,
   /^\.releaserc\.json$/,
   /^CHANGELOG\.md$/,
   /^__pycache__\//,

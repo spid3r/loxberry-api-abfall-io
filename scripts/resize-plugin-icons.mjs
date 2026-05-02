@@ -1,14 +1,12 @@
 /**
  * Builds LoxBerry plugin PNG icons (64/128/256/512) from Inkscape SVG masters.
  *
- * Sources (under icons/):
- *   - icon_source_without_text.svg -> icon_{64,128,256,512}.png (plugin default)
- *   - icon_source.svg               -> icon_with_text_{64,...,512}.png (optional)
+ * - icons/icon_{64,...,512}.png — from icon_source.svg (with label). Copied by
+ *   LoxBerry into /system/images/icons/<PLUGIN>/ → plugin overview / widgets.
+ * - webfrontend/html/icon_64.png & htmlauth/icon_64.png — from
+ *   icon_source_without_text.svg → compact glyph in embedded admin UI header.
  *
- * Each output is a square app icon: full-bleed squircle (rounded rect over the
- * whole PNG; corner pixels transparent) with a light 3D-style face gradient,
- * soft cast shadow, thin outer rim, and inner highlight ring. Artwork is
- * trimmed then composited on top so it stays sharp.
+ * Squircle framing: full-bleed rounded tile + light 3D + shadow; artwork trimmed.
  */
 import fs from "node:fs";
 import path from "node:path";
@@ -27,10 +25,10 @@ const SQUIRCLE_RX_RATIO = 0.2237;
 /** Minimal inset between squircle edge and artwork (fraction of side). */
 const ART_INSET_RATIO = 0.022;
 
-const VARIANTS = [
-  { svg: "icon_source_without_text.svg", outPrefix: "icon_", required: true },
-  { svg: "icon_source.svg", outPrefix: "icon_with_text_", required: false },
-];
+/** Labelled asset for system/overview icons (preferred). Falls back below. */
+const SVG_OVERVIEW = "icon_source.svg";
+/** Glyph-only asset for iframe admin header preview. */
+const SVG_UI_EMBED = "icon_source_without_text.svg";
 
 function fullBleedSquircleSvg(pixelSize) {
   const s = pixelSize;
@@ -92,26 +90,27 @@ async function renderFramedAppIcon(svgPath, pixelSize) {
 }
 
 async function main() {
-  for (const variant of VARIANTS) {
-    const svgPath = path.join(iconsDir, variant.svg);
-    if (!fs.existsSync(svgPath)) {
-      if (variant.required) {
-        throw new Error(`Missing required SVG: ${path.relative(root, svgPath)}`);
-      }
-      console.warn(`Skip variant (file missing): ${variant.svg}`);
-      continue;
-    }
-    console.log(`Variant: ${variant.svg} -> ${variant.outPrefix}*.png`);
-    for (const size of sizes) {
-      const out = path.join(iconsDir, `${variant.outPrefix}${size}.png`);
-      const png = await renderFramedAppIcon(svgPath, size);
-      fs.writeFileSync(out, png);
-      console.log(`  Wrote ${path.relative(root, out)}`);
-    }
+  const pathOverview = path.join(iconsDir, SVG_OVERVIEW);
+  const pathUi = path.join(iconsDir, SVG_UI_EMBED);
+
+  if (!fs.existsSync(pathUi)) {
+    throw new Error(`Missing required SVG: ${path.relative(root, pathUi)}`);
+  }
+  const overviewSvg = fs.existsSync(pathOverview) ? pathOverview : pathUi;
+  if (overviewSvg === pathUi) {
+    console.warn(`Using ${SVG_UI_EMBED} for icons/icon_*.png (${SVG_OVERVIEW} missing).`);
   }
 
-  const defaultSvg = path.join(iconsDir, "icon_source_without_text.svg");
-  const small = await renderFramedAppIcon(defaultSvg, 64);
+  console.log(`Overview set (icons/icon_*.png): ${path.relative(root, overviewSvg)}`);
+  for (const size of sizes) {
+    const out = path.join(iconsDir, `icon_${size}.png`);
+    const png = await renderFramedAppIcon(overviewSvg, size);
+    fs.writeFileSync(out, png);
+    console.log(`  Wrote ${path.relative(root, out)}`);
+  }
+
+  console.log(`Embedded UI thumb: ${SVG_UI_EMBED}`);
+  const small = await renderFramedAppIcon(pathUi, 64);
   for (const rel of ["webfrontend/html/icon_64.png", "webfrontend/htmlauth/icon_64.png"]) {
     const p = path.join(root, rel);
     fs.mkdirSync(path.dirname(p), { recursive: true });
