@@ -1,6 +1,15 @@
 ﻿====== Abfall IO / Abfallabholung (api.abfall.io) ======
 
 ++++ Version History |
+**Version 1.4.2**
+
+  * **readme:** correct markdown line break in beta pilot note (2307023)
+  * **release:** pin beta builds to stable core; document policy (2f3eae9)
+
+**Version 1.4.1**
+
+  * **icons:** update plugin icons and enhance icon generation script (dbb79d2)
+
 **Version 1.4.1**
 
   * **icons:** update plugin icons and enhance icon generation script (dbb79d2)
@@ -12,14 +21,6 @@
 **Version 1.3.0**
 
   * **docs:** add live LoxBerry screenshots to wiki output (3d69e32)
-
-**Version 1.2.0**
-
-  * **release:** automate DokuWiki generation for releases (c6efdae)
-
-**Version 1.1.0**
-
-  * migrate plugin to abfall.io naming and service map (499b7d5)
 
 Ältere Releases, Änderungsnotizen sowie die **ZIP‑Pakete** findest du bei **[[https://github.com/spid3r/loxberry-api-abfall-io/releases|GitHub Releases]]**. Der **Quelltext** liegt im **[[https://github.com/spid3r/loxberry-api-abfall-io|Repository]]**.
 
