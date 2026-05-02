@@ -150,8 +150,10 @@ In the plugin UI open the *Standort* / *Location* tab:
 In *Einstellungen* / *Settings*:
 
 - **Fetch interval (hours)** — how often `fetch.cjs` may hit the upstream API.
-  The default for a new install is **6 hours** (override in the UI or in
-  `config/abfall.json` before building the plugin ZIP).
+  The default for a new install is **6 hours** (override in the UI or locally in
+  `config/abfall.json` when developing from a git checkout). Release ZIP builds
+  **omit** `config/abfall.json` on purpose so a plugin upgrade does **not**
+  overwrite `…/config/plugins/abfallio/abfall.json` on the appliance.
 - **Fuzz factor (± minutes)** — random offset added to the interval so 1000
   appliances don't all poll at HH:00:00. Defaults to ±30 min, set to 0 to
   disable.

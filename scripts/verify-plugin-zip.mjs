@@ -104,7 +104,6 @@ const mustHave = [
   "webfrontend/html/icon_64.png",
   "templates/lang/language_en.ini",
   "templates/lang/language_de.ini",
-  "config/abfall.json",
   "cron/crontab",
   "icons/icon_64.png",
   "icons/icon_128.png",
@@ -121,6 +120,13 @@ const disallowedInZip = [
 const missing = mustHave.filter((f) => !list.includes(f));
 if (missing.length) {
   console.error("ZIP missing required plugin files:\n" + missing.map((m) => `  - ${m}`).join("\n"));
+  process.exit(1);
+}
+
+if (list.includes("config/abfall.json")) {
+  console.error(
+    "ZIP must not ship config/abfall.json — LoxBerry would overwrite userdata $LBHOMEDIR/config/plugins/<plugin>/abfall.json on upgrade.",
+  );
   process.exit(1);
 }
 
