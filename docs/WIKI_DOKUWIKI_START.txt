@@ -1,6 +1,14 @@
 ﻿====== Abfall IO / Abfallabholung (api.abfall.io) ======
 
 ++++ Version History |
+**Version 1.5.0**
+
+  * **cron:** resolve Node.js path at runtime for scheduled fetches (1ac79c4), closes #12
+  * **release:** add typings for beta-release-lib in typecheck (1ee97e1)
+  * **release:** run beta-release via tsx for TS branch helpers (38ccb46)
+  * **release:** publish beta pre-releases from fix/feature/hotfix branches (1e6315b)
+  * **runtime:** rotate abfall.log when file exceeds size limit (fe55535)
+
 **Version 1.4.2**
 
   * Beta integration build (see commits on branch ''beta'').
@@ -26,10 +34,6 @@
   * **release:** pin beta builds to stable core; document policy (2f3eae9)
   * **release:** pin beta semver via patch-package (SR verifyRelease uses cloneDeep) (810c3eb)
   * trigger beta release to verify pinned prerelease semver (31fb609)
-
-**Version 1.4.1**
-
-  * fix(plugin): persist userdata across LoxBerry upgrades
 
 Ältere Releases, Änderungsnotizen sowie die **ZIP‑Pakete** findest du bei **[[https://github.com/spid3r/loxberry-api-abfall-io/releases|GitHub Releases]]**. Der **Quelltext** liegt im **[[https://github.com/spid3r/loxberry-api-abfall-io|Repository]]**.
 
