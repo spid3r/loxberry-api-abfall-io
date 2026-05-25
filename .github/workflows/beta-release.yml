@@ -1,23 +1,20 @@
-# Beta prereleases: explicit `{latest-stable}-beta.N` (only N increments).
-# semantic-release runs only on `main` (see release.yml); it does not model this policy.
-# Also runs on fix/feature/hotfix branches so pilot ZIPs ship before merging to `beta`.
+# Pre-releases on `beta`: semantic-release pre-release branch (see .releaserc.json).
+# Topic branches (fix/*, feature/*) merge to `beta` via PR; only `beta` publishes betas.
 name: Beta release
 
 on:
   push:
-    branches:
-      - beta
-      - fix/**
-      - feature/**
-      - hotfix/**
+    branches: [beta]
 
 jobs:
-  beta:
+  release:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      issues: write
+      pull-requests: write
     concurrency:
-      group: beta-release-${{ github.ref_name }}
+      group: semantic-release-beta
       cancel-in-progress: false
 
     steps:
@@ -41,7 +38,7 @@ jobs:
       - name: Typecheck and unit tests
         run: npm run typecheck && npm test
 
-      - name: Beta release (tag + GitHub pre-release + ZIP)
-        run: npm run release:beta
+      - name: Semantic release (pre-release on beta; ZIP + prerelease.cfg in prepare)
+        run: npx semantic-release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

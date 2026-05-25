@@ -216,10 +216,10 @@ flowchart LR
   CI --> M
   CI --> B
   M --> SR["semantic-release → stable + CHANGELOG"]
-  B --> BR["beta-release.mjs → pre-release ZIP"]
+  B --> BR["semantic-release → pre-release ZIP"]
 ```
 
-**Details:** [docs/DEVELOPER.md](./docs/DEVELOPER.md) (live `loxberry-client` deploy, destructive E2E env vars, Actions secrets, semantic-release vs beta lane, wiki screenshots).
+**Details:** [docs/DEVELOPER.md](./docs/DEVELOPER.md) (live `loxberry-client` deploy, destructive E2E env vars, Actions secrets, semantic-release, wiki screenshots).
 
 ## Building & development
 
@@ -241,7 +241,7 @@ Much of the workflow is **scripted** so you rarely click through LoxBerry by han
 - **CI** ([`.github/workflows/ci.yml`](./.github/workflows/ci.yml)) runs **typecheck**, **Mocha**, **`npm run release:zip`**, **ZIP sanity** (`verify:zip`), **wiki generate + validate**, and loads **Playwright** specs (live appliance E2E stays **opt-in**).
 - **`loxberry-client`** ([`loxberry-client-library`](https://github.com/spid3r/loxberry-client-library)): from this repo, **`npm run plugins:deploy`** / **`npm run test:live`** build the ZIP and **install or upgrade** the plugin on a box in one step (wait for install, retries, folder→pid resolution — see [docs/DEVELOPER.md](./docs/DEVELOPER.md)).
 - **Playwright** drives both **wiki screenshots** (`wiki:screenshots`) and the **optional destructive** full lifecycle test (`test-e2e/`, `npm run test:e2e:full:go` with explicit env opt-in).
-- Other tooling lives under **`scripts/`** (esbuild bundle, LoxBerry ZIP layout, beta release helper, wiki template merge).
+- Other tooling lives under **`scripts/`** (esbuild bundle, LoxBerry ZIP layout, wiki template merge).
 
 Together that covers **edit → test → zip → deploy → capture docs** without maintaining a separate manual checklist for every change.
 

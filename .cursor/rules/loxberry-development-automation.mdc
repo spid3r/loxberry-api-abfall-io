@@ -30,7 +30,7 @@ alwaysApply: true
 ## Branches / releases (short)
 
 - **`main`** — **semantic-release** (conventional commits); stable **`release.cfg`**.
-- **`beta`** — **`beta-release.yml`** + **`scripts/beta-release.mjs`**; **`prerelease.cfg`** on branch `beta`.
+- **`beta`** — **`beta-release.yml`** runs **semantic-release** (pre-release branch in `.releaserc.json`); **`prerelease.cfg`** on branch `beta`.
 
 ## Agent checklist (UI + docs touch)
 

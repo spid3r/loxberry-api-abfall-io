@@ -95,20 +95,21 @@ Use the **asset** link on a [GitHub Release](https://github.com/spid3r/loxberry-
 
 Paste into LoxBerry Plugin Management “install from URL”. “Copy link” on the asset should return the raw ZIP.
 
-## Release workflow (semantic-release + beta)
+## Release workflow (semantic-release)
 
 - **Conventional Commits** drive versions ([`commitlint.config.mjs`](../commitlint.config.mjs)).
-- Push to **`main`** → [`.github/workflows/release.yml`](../.github/workflows/release.yml): semantic-release may bump `package.json` / `plugin.cfg`, update `CHANGELOG.md`, tag, GitHub Release + ZIP, **`release.cfg`** on `main`.
-- Push to **`beta`**, or to **`fix/*`**, **`feature/*`**, **`hotfix/*`** → [`.github/workflows/beta-release.yml`](../.github/workflows/beta-release.yml): [`scripts/beta-release.mjs`](../scripts/beta-release.mjs) builds **`{latest stable tag}-beta.N`**, updates **`prerelease.cfg`**, pre-release on GitHub, bot `chore(release): … [skip ci]` commit. Topic branches get pilot ZIPs before merging to `beta`. This is a **build counter on the current stable line**, not semantic-release’s default prerelease-of-next-version model.
-- Merge **`beta` → `main`** when shipping stable; semantic-release then does real semver + changelog.
+- [`/.releaserc.json`](../.releaserc.json) defines **`main`** (stable) and **`beta`** (`prerelease: true`). Same plugins for both: changelog, LoxBerry ZIP + wiki in `@semantic-release/exec`, GitHub Release asset, version commit.
+- Push to **`main`** → [`.github/workflows/release.yml`](../.github/workflows/release.yml): stable semver (e.g. `1.5.0`), **`release.cfg`**, GitHub Release (not pre-release).
+- Merge **`fix/*` / `feature/*` → `beta`** (PR), then push **`beta`** → [`.github/workflows/beta-release.yml`](../.github/workflows/beta-release.yml): semantic-release publishes **`{nextStable}-beta.N`** (e.g. `1.5.0-beta.1` after `feat:` on stable `1.4.2`), updates **`prerelease.cfg`**, GitHub **pre-release** + ZIP.
+- Merge **`beta` → `main`** when shipping stable; semantic-release on `main` releases the same preview line as stable + updates **`release.cfg`**.
 
-**SemVer on the appliance:** stable `1.4.1` is **newer** than `1.4.1-beta.*`; “Pre- and Releases” alone does not downgrade stable to beta. Install a beta ZIP once to be on the beta line, then autoupdate can offer `beta.N+1`. See README “Pre-Releases” summary.
+**SemVer on the appliance:** stable `1.4.1` is **newer** than `1.4.1-beta.*`; “Pre- and Releases” alone does not downgrade stable to beta. Install a beta ZIP once to be on the beta line, then autoupdate can follow `PRERELEASECFG`. See README “Pre-Releases” summary.
 
-Dry-run locally:
+Dry-run locally (checkout target branch first):
 
 ```bash
-npm run release:dry-run
-BETA_RELEASE_DRY_RUN=1 npm run release:beta
+npm run release:dry-run          # current branch (main or beta)
+npm run release:beta:dry-run     # simulate beta pre-release only
 ```
 
 ## Architecture (code layout)
