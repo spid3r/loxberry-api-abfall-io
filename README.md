@@ -90,7 +90,7 @@ Opening `plugins/<folder>/index.php` shows a **short help** page (`?view=html`).
 
 **Beginner path:** (1) Location + save. (2) Street + save. (3) Status → Fetch now. (4) Optional: **Settings** (interval ≥6 h, filter, MQTT, Loxone/JSON). Problems → **Log** tab. See [DISCLAIMER.md](./DISCLAIMER.md).
 
-**Install from URL:** use the **release asset** ZIP link (`…/releases/download/vVERSION/loxberry-plugin-abfallio-VERSION.zip`), not “Source code”. More detail: [docs/DEVELOPER.md](./docs/DEVELOPER.md).
+**Install from URL:** use the **release asset** ZIP link (`…/releases/download/vVERSION/loxberry-plugin-abfallio-VERSION.zip`), not “Source code”. **Pre-releases** (beta builds) live on the same [GitHub Releases](https://github.com/spid3r/loxberry-api-abfall-io/releases) page under **Pre-releases** — e.g. `1.5.0-beta.1` previews the upcoming `1.5.0` stable line. More detail: [docs/DEVELOPER.md](./docs/DEVELOPER.md).
 
 **Install errors (extract / “Unknown Plugin”):** [docs/troubleshooting-plugin-install.md](./docs/troubleshooting-plugin-install.md).
 
