@@ -1,3 +1,10 @@
+## [1.4.2-beta.2](https://github.com/spid3r/loxberry-api-abfall-io/compare/v1.4.2-beta.1...v1.4.2-beta.2) (2026-05-25)
+
+* fix(release): run beta-release via tsx for TS branch helpers
+* fix(release): add typings for beta-release-lib in typecheck
+* feat(release): publish beta pre-releases from fix/feature/hotfix branches
+* fix(cron): resolve Node.js path at runtime for scheduled fetches
+
 ## [1.4.2-beta.1](https://github.com/spid3r/loxberry-api-abfall-io/compare/v1.4.2...v1.4.2-beta.1) (2026-05-04)
 
 * Beta integration build (see commits on branch `beta`).
