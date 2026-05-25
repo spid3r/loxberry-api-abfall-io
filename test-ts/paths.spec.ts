@@ -67,6 +67,7 @@ describe("path resolution", () => {
       expect(p).to.not.equal(null);
       expect(p!.file_exists).to.equal(true);
       expect(p!.replacelb_placeholder_found).to.equal(true);
+      expect(p!.node_path_likely_broken).to.equal(true);
     } finally {
       if (oldHome === undefined) delete process.env.LBHOMEDIR;
       else process.env.LBHOMEDIR = oldHome;
@@ -93,6 +94,36 @@ describe("path resolution", () => {
     }
   });
 
+  it("merged cron probe reports healthy wrapper-based cron", () => {
+    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "lbcron3-"));
+    const pluginName = "abfallio";
+    const cronDir = path.join(tempRoot, "system", "cron", "cron.d");
+    fs.mkdirSync(cronDir, { recursive: true });
+    const cronFile = path.join(cronDir, pluginName);
+    fs.writeFileSync(
+      cronFile,
+      `17 * * * * loxberry LBHOMEDIR=${tempRoot} LBPPLUGINDIR=${pluginName} ${tempRoot}/bin/plugins/${pluginName}/run_fetch.sh >> ${tempRoot}/log/plugins/${pluginName}/abfall.log 2>&1\n`,
+      "utf-8",
+    );
+
+    const oldHome = process.env.LBHOMEDIR;
+    const oldPlugin = process.env.LBPPLUGINDIR;
+    process.env.LBHOMEDIR = tempRoot;
+    process.env.LBPPLUGINDIR = pluginName;
+    try {
+      const p = readMergedCronInstallProbe();
+      expect(p!.uses_fetch_wrapper).to.equal(true);
+      expect(p!.node_path_likely_broken).to.equal(false);
+      expect(p!.hardcoded_node_invocation).to.equal(false);
+    } finally {
+      if (oldHome === undefined) delete process.env.LBHOMEDIR;
+      else process.env.LBHOMEDIR = oldHome;
+      if (oldPlugin === undefined) delete process.env.LBPPLUGINDIR;
+      else process.env.LBPPLUGINDIR = oldPlugin;
+    }
+    fs.rmSync(tempRoot, { recursive: true, force: true });
+  });
+
   it("merged cron probe reports no placeholder when cron is expanded", () => {
     const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "lbcron2-"));
     const pluginName = "abfallio";
@@ -112,6 +143,8 @@ describe("path resolution", () => {
     try {
       const p = readMergedCronInstallProbe();
       expect(p!.replacelb_placeholder_found).to.equal(false);
+      expect(p!.hardcoded_node_invocation).to.equal(true);
+      expect(p!.node_path_likely_broken).to.equal(true);
     } finally {
       if (oldHome === undefined) delete process.env.LBHOMEDIR;
       else process.env.LBHOMEDIR = oldHome;

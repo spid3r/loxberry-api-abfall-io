@@ -9,6 +9,8 @@ PFOLDER="${ARGV3:-$ARGV2}"
 echo "<INFO> Setting permissions for scripts..."
 chmod +x "$LBHOMEDIR/bin/plugins/$PFOLDER/fetch.cjs" 2>/dev/null
 chmod +x "$LBHOMEDIR/bin/plugins/$PFOLDER/abfall_api.cjs" 2>/dev/null
+chmod +x "$LBHOMEDIR/bin/plugins/$PFOLDER/run_fetch.sh" 2>/dev/null || true
+chmod +x "$LBHOMEDIR/bin/plugins/$PFOLDER/find_node.sh" 2>/dev/null || true
 chmod +x "$LBHOMEDIR/bin/plugins/$PFOLDER/patch_cron_loxberry.sh" 2>/dev/null || true
 
 # REPLACELB* cron fix runs in postroot.sh (root); postinstall runs as user loxberry

@@ -1,6 +1,7 @@
 import path from "node:path";
 import fs from "node:fs";
 import { fileURLToPath } from "node:url";
+import { analyzeMergedCronContent, type MergedCronInstallProbe } from "./cron-install.js";
 
 const thisDir = path.dirname(fileURLToPath(import.meta.url));
 
@@ -86,13 +87,7 @@ export function getLoxBerryHomeAndPlugin(): { lbhomedir: string; lbpplugindir: s
  * system-merged cron file and report whether LoxBerry left `REPLACELB*` in it.
  * Used by `getStatus()` and by E2E on the live appliance.
  */
-export function readMergedCronInstallProbe():
-  | {
-      merged_cron_path: string;
-      file_exists: boolean;
-      replacelb_placeholder_found: boolean;
-    }
-  | null {
+export function readMergedCronInstallProbe(): MergedCronInstallProbe | null {
   const { lbhomedir, lbpplugindir } = getLoxBerryHomeAndPlugin();
   if (!lbhomedir || !lbpplugindir) {
     return null;
@@ -106,13 +101,20 @@ export function readMergedCronInstallProbe():
     lbpplugindir,
   );
   if (!fs.existsSync(merged)) {
-    return { merged_cron_path: merged, file_exists: false, replacelb_placeholder_found: false };
+    return {
+      merged_cron_path: merged,
+      file_exists: false,
+      replacelb_placeholder_found: false,
+      uses_fetch_wrapper: false,
+      hardcoded_node_invocation: false,
+      node_path_likely_broken: false,
+    };
   }
   const text = fs.readFileSync(merged, "utf-8");
   return {
     merged_cron_path: merged,
     file_exists: true,
-    replacelb_placeholder_found: text.includes("REPLACELB"),
+    ...analyzeMergedCronContent(text),
   };
 }
 
