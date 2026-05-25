@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import { isBetaReleaseBranchRef } from "../scripts/beta-release-lib.mjs";
+import { isBetaReleaseBranchRef } from "../src-ts/lib/beta-release-branches.js";
 
 describe("beta-release branch policy", () => {
   it("allows beta and conventional topic branch prefixes", () => {

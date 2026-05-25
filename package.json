@@ -39,7 +39,7 @@
     "use:local-client-library": "npm install ../loxberry-client-library",
     "link:client-lib": "node ./scripts/link-client-lib.mjs",
     "release:dry-run": "semantic-release --dry-run",
-    "release:beta": "node ./scripts/beta-release.mjs"
+    "release:beta": "npx tsx ./scripts/beta-release.mjs"
   },
   "repository": {
     "type": "git",

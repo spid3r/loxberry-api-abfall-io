@@ -10,7 +10,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import semver from "semver";
-import { isBetaReleaseBranchRef, releaseBranchName } from "./beta-release-lib.mjs";
+import { isBetaReleaseBranchRef, releaseBranchName } from "../src-ts/lib/beta-release-branches.ts";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, "..");
