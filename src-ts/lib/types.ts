@@ -90,6 +90,12 @@ export interface ApiStatus {
     file_exists: boolean;
     /** True = unexpanded `REPLACELB*` in file (node would log MODULE_NOT_FOUND). */
     replacelb_placeholder_found: boolean;
+    /** Cron invokes `run_fetch.sh` (runtime Node resolution) instead of a hard-coded binary. */
+    uses_fetch_wrapper: boolean;
+    /** Cron calls `fetch.cjs` via an absolute `…/node …/fetch.cjs` path. */
+    hardcoded_node_invocation: boolean;
+    /** Legacy cron likely broken when Node is not at the hard-coded path (see issue #12). */
+    node_path_likely_broken: boolean;
   } | null;
   /** Which region list file is in use (bundled in plugin vs downloaded to user data). */
   service_map?: {

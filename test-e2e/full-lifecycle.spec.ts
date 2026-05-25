@@ -425,6 +425,9 @@ test.describe("@e2e abfallio full plugin lifecycle (destructive)", () => {
           merged_cron_path: string;
           file_exists: boolean;
           replacelb_placeholder_found: boolean;
+          uses_fetch_wrapper?: boolean;
+          hardcoded_node_invocation?: boolean;
+          node_path_likely_broken?: boolean;
         } | null;
       };
       expect(data.error, body.slice(0, 300)).toBeUndefined();
@@ -445,6 +448,14 @@ test.describe("@e2e abfallio full plugin lifecycle (destructive)", () => {
         expect(
           data.install_cron.replacelb_placeholder_found,
           `REPLACELB* must be expanded in merged cron (path ${data.install_cron.merged_cron_path})`,
+        ).toBe(false);
+        expect(
+          data.install_cron.uses_fetch_wrapper,
+          `merged cron should use run_fetch.sh wrapper (path ${data.install_cron.merged_cron_path})`,
+        ).toBe(true);
+        expect(
+          data.install_cron.node_path_likely_broken,
+          `legacy hard-coded node path in cron should be patched (path ${data.install_cron.merged_cron_path})`,
         ).toBe(false);
       }
     });

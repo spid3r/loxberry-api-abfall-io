@@ -95,6 +95,8 @@ const mustHave = [
   "postupgrade.sh",
   "postroot.sh",
   "bin/patch_cron_loxberry.sh",
+  "bin/find_node.sh",
+  "bin/run_fetch.sh",
   "bin/abfall_api.cjs",
   "bin/fetch.cjs",
   "webfrontend/htmlauth/index.php",

@@ -20,7 +20,8 @@ if ($lbhomedir && is_dir($lbhomedir . '/bin/plugins/' . $lbpplugindir)) {
 }
 
 function find_node() {
-    foreach (['/usr/bin/node', '/usr/local/bin/node', '/opt/loxberry/bin/node'] as $candidate) {
+    // Keep order in sync with bin/find_node.sh and src-ts/lib/node-path.ts (LoxBerry 3: /opt/loxberry/bin/node).
+    foreach (['/opt/loxberry/bin/node', '/usr/bin/node', '/usr/local/bin/node'] as $candidate) {
         if (is_executable($candidate)) {
             return $candidate;
         }
