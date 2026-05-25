@@ -1,4 +1,5 @@
 import fs from "node:fs";
+import { rotateLogFileIfNeeded } from "./log-rotate.js";
 import { resolvePaths } from "./paths.js";
 
 type Level = "INFO" | "WARNING" | "ERROR" | "DEBUG";
@@ -12,6 +13,7 @@ function now(): string {
 function write(level: Level, message: string, toStderr = true): void {
   const { logFile, logDir } = resolvePaths();
   fs.mkdirSync(logDir, { recursive: true });
+  rotateLogFileIfNeeded(logFile);
   const line = `${now()} [${level}] ${message}\n`;
   fs.appendFileSync(logFile, line, { encoding: "utf-8" });
   if (toStderr) {
