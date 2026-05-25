@@ -1,10 +1,15 @@
 # Beta prereleases: explicit `{latest-stable}-beta.N` (only N increments).
 # semantic-release runs only on `main` (see release.yml); it does not model this policy.
+# Also runs on fix/feature/hotfix branches so pilot ZIPs ship before merging to `beta`.
 name: Beta release
 
 on:
   push:
-    branches: [beta]
+    branches:
+      - beta
+      - fix/**
+      - feature/**
+      - hotfix/**
 
 jobs:
   beta:

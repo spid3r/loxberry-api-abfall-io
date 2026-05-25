@@ -173,6 +173,41 @@ switch ($action) {
         echo $output ?: json_encode(['error' => 'Status unavailable']);
         break;
 
+    case 'cron_probe':
+        // Same Node resolution path as cron (run_fetch.sh → find_node.sh); read-only smoke test.
+        $find_script = $plugin_bin . '/find_node.sh';
+        $wrapper = $plugin_bin . '/run_fetch.sh';
+        $resolved_node = null;
+        if (is_file($find_script)) {
+            $probe_cmd = 'bash -c ' . escapeshellarg('. ' . $find_script . '; find_loxberry_node');
+            $candidate = trim((string) @shell_exec($probe_cmd));
+            if ($candidate !== '') {
+                $resolved_node = $candidate;
+            }
+        }
+        $wrapper_ok = false;
+        $wrapper_detail = '';
+        if (is_file($wrapper) && is_executable($wrapper) && $lbhomedir && $lbpplugindir) {
+            $stderr_file = tempnam(sys_get_temp_dir(), 'abfallio_cron_probe_');
+            $env_prefix = 'LBHOMEDIR=' . escapeshellarg($lbhomedir) . ' LBPPLUGINDIR=' . escapeshellarg($lbpplugindir) . ' ';
+            $cmd = $env_prefix . escapeshellarg($wrapper) . ' 2>' . escapeshellarg($stderr_file);
+            shell_exec($cmd);
+            $wrapper_detail = trim((string) @file_get_contents($stderr_file));
+            if (is_file($stderr_file)) {
+                @unlink($stderr_file);
+            }
+            $wrapper_ok = $wrapper_detail === '' || stripos($wrapper_detail, 'Node.js not found') === false;
+        }
+        $status_json = json_decode(run_api($node, $api_script, ['status']), true) ?: [];
+        json_response([
+            'resolved_node' => $resolved_node,
+            'admin_ui_node' => $node,
+            'wrapper_ok' => $wrapper_ok,
+            'wrapper_detail' => $wrapper_detail !== '' ? substr($wrapper_detail, 0, 500) : '',
+            'install_cron' => $status_json['install_cron'] ?? null,
+        ]);
+        break;
+
     case 'log':
         $output = run_api($node, $api_script, ['log', '200'], false);
         json_response(['log' => $output ?: '']);

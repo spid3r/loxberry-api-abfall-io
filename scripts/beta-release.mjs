@@ -10,6 +10,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import semver from "semver";
+import { isBetaReleaseBranchRef, releaseBranchName } from "./beta-release-lib.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, "..");
@@ -94,8 +95,11 @@ function run(cmd) {
 const dry = process.env.BETA_RELEASE_DRY_RUN === "1";
 const ci = process.env.GITHUB_ACTIONS === "true";
 
-if (ci && process.env.GITHUB_REF !== "refs/heads/beta") {
-  console.log("Not on beta ref; skipping.");
+const githubRef = process.env.GITHUB_REF ?? "";
+const releaseBranch = releaseBranchName(githubRef);
+
+if (ci && !isBetaReleaseBranchRef(githubRef)) {
+  console.log(`Not a beta release ref (${githubRef}); skipping.`);
   process.exit(0);
 }
 
@@ -158,7 +162,9 @@ if (dry) {
 }
 
 if (!ci) {
-  console.warn("Run on GitHub Actions (push to beta), or locally: BETA_RELEASE_DRY_RUN=1 npm run release:beta");
+  console.warn(
+    "Run on GitHub Actions (push to beta, fix/*, feature/*, or hotfix/*), or locally: BETA_RELEASE_DRY_RUN=1 npm run release:beta",
+  );
   process.exit(1);
 }
 
@@ -180,11 +186,13 @@ run('git config user.name "semantic-release-bot"');
 run("git add CHANGELOG.md plugin.cfg package.json prerelease.cfg docs/WIKI_DOKUWIKI_START.txt");
 run(`git commit -m "chore(release): ${nextVersion} [skip ci]"`);
 run(`git tag ${tagName}`);
-run("git push origin HEAD:beta");
+run(`git push origin HEAD:${releaseBranch}`);
 run(`git push origin ${tagName}`);
 
 const notesPath = path.join(root, ".beta-release-notes.md");
-const notes = `Prerelease on branch \`beta\` for stable line **${stable}**. Version **${nextVersion}** only increments \`-beta.N\`; semver bumps for stable happen on \`main\` via semantic-release.`;
+const notes =
+  `Prerelease from branch \`${releaseBranch}\` for stable line **${stable}**. ` +
+  `Version **${nextVersion}** only increments \`-beta.N\`; semver bumps for stable happen on \`main\` via semantic-release.`;
 fs.writeFileSync(notesPath, notes, "utf8");
 try {
   run(`gh release create "${tagName}" "${zip}" --prerelease --title "${tagName}" --notes-file "${notesPath}"`);

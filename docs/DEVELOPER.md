@@ -99,7 +99,7 @@ Paste into LoxBerry Plugin Management “install from URL”. “Copy link” on
 
 - **Conventional Commits** drive versions ([`commitlint.config.mjs`](../commitlint.config.mjs)).
 - Push to **`main`** → [`.github/workflows/release.yml`](../.github/workflows/release.yml): semantic-release may bump `package.json` / `plugin.cfg`, update `CHANGELOG.md`, tag, GitHub Release + ZIP, **`release.cfg`** on `main`.
-- Push to **`beta`** → [`.github/workflows/beta-release.yml`](../.github/workflows/beta-release.yml): [`scripts/beta-release.mjs`](../scripts/beta-release.mjs) builds **`{latest stable tag}-beta.N`**, updates **`prerelease.cfg`**, pre-release on GitHub, bot `chore(release): … [skip ci]` commit. This is a **build counter on the current stable line**, not semantic-release’s default prerelease-of-next-version model.
+- Push to **`beta`**, or to **`fix/*`**, **`feature/*`**, **`hotfix/*`** → [`.github/workflows/beta-release.yml`](../.github/workflows/beta-release.yml): [`scripts/beta-release.mjs`](../scripts/beta-release.mjs) builds **`{latest stable tag}-beta.N`**, updates **`prerelease.cfg`**, pre-release on GitHub, bot `chore(release): … [skip ci]` commit. Topic branches get pilot ZIPs before merging to `beta`. This is a **build counter on the current stable line**, not semantic-release’s default prerelease-of-next-version model.
 - Merge **`beta` → `main`** when shipping stable; semantic-release then does real semver + changelog.
 
 **SemVer on the appliance:** stable `1.4.1` is **newer** than `1.4.1-beta.*`; “Pre- and Releases” alone does not downgrade stable to beta. Install a beta ZIP once to be on the beta line, then autoupdate can offer `beta.N+1`. See README “Pre-Releases” summary.
