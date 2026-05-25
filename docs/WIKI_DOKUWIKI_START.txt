@@ -3,6 +3,10 @@
 ++++ Version History |
 **Version 1.4.2**
 
+  * Beta integration build (see commits on branch ''beta'').
+
+**Version 1.4.2**
+
   * fix(release): run beta-release via tsx for TS branch helpers
   * fix(release): add typings for beta-release-lib in typecheck
   * feat(release): publish beta pre-releases from fix/feature/hotfix branches
@@ -26,10 +30,6 @@
 **Version 1.4.1**
 
   * fix(plugin): persist userdata across LoxBerry upgrades
-
-**Version 1.4.1**
-
-  * fix(release): omit bundled abfall.json from plugin ZIP
 
 Ältere Releases, Änderungsnotizen sowie die **ZIP‑Pakete** findest du bei **[[https://github.com/spid3r/loxberry-api-abfall-io/releases|GitHub Releases]]**. Der **Quelltext** liegt im **[[https://github.com/spid3r/loxberry-api-abfall-io|Repository]]**.
 

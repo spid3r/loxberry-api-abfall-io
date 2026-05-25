@@ -1,3 +1,7 @@
+## [1.4.2-beta.3](https://github.com/spid3r/loxberry-api-abfall-io/compare/v1.4.2-beta.2...v1.4.2-beta.3) (2026-05-25)
+
+* Beta integration build (see commits on branch `beta`).
+
 ## [1.4.2-beta.2](https://github.com/spid3r/loxberry-api-abfall-io/compare/v1.4.2-beta.1...v1.4.2-beta.2) (2026-05-25)
 
 * fix(release): run beta-release via tsx for TS branch helpers
