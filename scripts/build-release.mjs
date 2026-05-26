@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import archiver from "archiver";
+import { ZipArchive } from "archiver";
 import { fileURLToPath } from "node:url";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -149,7 +149,7 @@ for (const file of fileEntries) {
 
 await new Promise((resolve, reject) => {
   const output = fs.createWriteStream(zipPath);
-  const archive = archiver("zip", { zlib: { level: 9 } });
+  const archive = new ZipArchive({ zlib: { level: 9 } });
 
   output.on("close", resolve);
   archive.on("error", reject);

@@ -1,9 +1,12 @@
 #!/usr/bin/env node
 import { configuredServiceKey, fetchData, loadConfig, shouldFetch } from "../lib/abfall-service.js";
 import { log } from "../lib/logger.js";
+import { rotateLogFileIfNeeded } from "../lib/log-rotate.js";
+import { resolvePaths } from "../lib/paths.js";
 
 async function main(): Promise<void> {
   const force = process.argv.includes("--force");
+  rotateLogFileIfNeeded(resolvePaths().logFile);
   log.info("==================================================");
   log.info(`Waste collection fetch started${force ? " (forced)" : ""}`);
 

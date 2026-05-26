@@ -1,3 +1,33 @@
+# [1.5.0-beta.1](https://github.com/spid3r/loxberry-api-abfall-io/compare/v1.4.2...v1.5.0-beta.1) (2026-05-25)
+
+
+### Bug Fixes
+
+* **cron:** resolve Node.js path at runtime for scheduled fetches ([1ac79c4](https://github.com/spid3r/loxberry-api-abfall-io/commit/1ac79c4fe3100176a78657eaa3f7d4372d46ffa8)), closes [#12](https://github.com/spid3r/loxberry-api-abfall-io/issues/12)
+* **release:** add typings for beta-release-lib in typecheck ([1ee97e1](https://github.com/spid3r/loxberry-api-abfall-io/commit/1ee97e139f0e24eb4a3889fbdb9360586a19fa1c))
+* **release:** run beta-release via tsx for TS branch helpers ([38ccb46](https://github.com/spid3r/loxberry-api-abfall-io/commit/38ccb460ad82c350759a99e5e769212d9df6f69f))
+
+
+### Features
+
+* **release:** publish beta pre-releases from fix/feature/hotfix branches ([1e6315b](https://github.com/spid3r/loxberry-api-abfall-io/commit/1e6315be1473892279cf8d872a93403059fb39d2))
+* **runtime:** rotate abfall.log when file exceeds size limit ([fe55535](https://github.com/spid3r/loxberry-api-abfall-io/commit/fe55535fed68dbb79910673c87787e2d275b2988))
+
+## [1.4.2-beta.3](https://github.com/spid3r/loxberry-api-abfall-io/compare/v1.4.2-beta.2...v1.4.2-beta.3) (2026-05-25)
+
+* Beta integration build (see commits on branch `beta`).
+
+## [1.4.2-beta.2](https://github.com/spid3r/loxberry-api-abfall-io/compare/v1.4.2-beta.1...v1.4.2-beta.2) (2026-05-25)
+
+* fix(release): run beta-release via tsx for TS branch helpers
+* fix(release): add typings for beta-release-lib in typecheck
+* feat(release): publish beta pre-releases from fix/feature/hotfix branches
+* fix(cron): resolve Node.js path at runtime for scheduled fetches
+
+## [1.4.2-beta.1](https://github.com/spid3r/loxberry-api-abfall-io/compare/v1.4.2...v1.4.2-beta.1) (2026-05-04)
+
+* Beta integration build (see commits on branch `beta`).
+
 ## [1.4.2](https://github.com/spid3r/loxberry-api-abfall-io/compare/v1.4.1...v1.4.2) (2026-05-02)
 
 

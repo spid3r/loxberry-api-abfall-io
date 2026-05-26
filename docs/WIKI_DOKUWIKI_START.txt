@@ -1,6 +1,29 @@
 ﻿====== Abfall IO / Abfallabholung (api.abfall.io) ======
 
 ++++ Version History |
+**Version 1.5.0**
+
+  * **cron:** resolve Node.js path at runtime for scheduled fetches (1ac79c4), closes #12
+  * **release:** add typings for beta-release-lib in typecheck (1ee97e1)
+  * **release:** run beta-release via tsx for TS branch helpers (38ccb46)
+  * **release:** publish beta pre-releases from fix/feature/hotfix branches (1e6315b)
+  * **runtime:** rotate abfall.log when file exceeds size limit (fe55535)
+
+**Version 1.4.2**
+
+  * Beta integration build (see commits on branch ''beta'').
+
+**Version 1.4.2**
+
+  * fix(release): run beta-release via tsx for TS branch helpers
+  * fix(release): add typings for beta-release-lib in typecheck
+  * feat(release): publish beta pre-releases from fix/feature/hotfix branches
+  * fix(cron): resolve Node.js path at runtime for scheduled fetches
+
+**Version 1.4.2**
+
+  * Beta integration build (see commits on branch ''beta'').
+
 **Version 1.4.2**
 
   * always resolve user config under loxberry central paths (1236379)
@@ -11,22 +34,6 @@
   * **release:** pin beta builds to stable core; document policy (2f3eae9)
   * **release:** pin beta semver via patch-package (SR verifyRelease uses cloneDeep) (810c3eb)
   * trigger beta release to verify pinned prerelease semver (31fb609)
-
-**Version 1.4.1**
-
-  * fix(plugin): persist userdata across LoxBerry upgrades
-
-**Version 1.4.1**
-
-  * fix(release): omit bundled abfall.json from plugin ZIP
-
-**Version 1.4.1**
-
-  * fix: always resolve user config under loxberry central paths
-
-**Version 1.4.1**
-
-  * fix(beta-release): skip when no releasable or merge commits since last tag
 
 Ältere Releases, Änderungsnotizen sowie die **ZIP‑Pakete** findest du bei **[[https://github.com/spid3r/loxberry-api-abfall-io/releases|GitHub Releases]]**. Der **Quelltext** liegt im **[[https://github.com/spid3r/loxberry-api-abfall-io|Repository]]**.
 
@@ -59,7 +66,7 @@ Das Plugin liefert **Abfuhrtermine** über die öffentliche Schnittstelle **[[ht
 
 Willst du **Test- oder Zwischenstände** probieren (auf GitHub als **Pre-Release / Beta** gekennzeichnet), geht das mit derselben **ZIP‑Installation** wie bei Stable — nur liegt die Datei unter dem Pre-Release-Eintrag (Asset **loxberry-plugin-abfallio-…-beta….zip**).
 
-**Wichtig zum LoxBerry-Vergleich:** Die Plugin-Verwaltung bewertet Versionen wie üblich nach **SemVer**. Steht bei dir **Stable** %%1.4.1%% installiert, gilt eine **Beta** wie %%1.4.1-beta.2%% formal als **„ältere“ Version** %%1.4.1%% — dann wird **„Pre- und Releases“** allein **kein** automatisches Upgrade von Stable auf diese Beta anbieten. Das ist erwartetes Verhalten, kein Konfigurationsfehler.
+**Wichtig zum LoxBerry-Vergleich:** Die Plugin-Verwaltung bewertet Versionen nach **SemVer**. **Vorschau-Betas** (z. B. %%1.5.0-beta.1%% bei Stable %%1.4.2%%) sind **neuer** als die installierte Stable-Version — mit **„Pre- und Releases“** kann LoxBerry sie anbieten. **Gleichbleibende Zeile** (%%1.4.2-beta.3%% bei Stable %%1.4.2%%) gilt dagegen als **älter** als %%1.4.2%%; dann hilft **„Pre- und Releases“** allein nicht — einmal die Beta-ZIP installieren, danach folgen %%…-beta.N+1%% über Autoupdate.
 
 **So probierst du Beta sinnvoll aus**
 

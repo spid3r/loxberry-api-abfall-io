@@ -1,7 +1,7 @@
-# Runs semantic-release on main only: version bump, CHANGELOG, Git tag, GitHub Release + ZIP.
+# Runs semantic-release on main only: stable semver, CHANGELOG, Git tag, GitHub Release + ZIP.
 #
-# - main → stable semver (release.cfg; GitHub Release, not prerelease).
-# - beta → see workflow `beta-release.yml` (explicit `{stable}-beta.N`, not semantic-release).
+# - main → stable (release.cfg).
+# - beta → see workflow `beta-release.yml` (semantic-release pre-release branch).
 #
 # No PAT required: the default GITHUB_TOKEN has enough scope when job permissions
 # are set to contents: write (see below). Do not set a restrictive workflow-level

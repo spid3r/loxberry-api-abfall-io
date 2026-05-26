@@ -34,7 +34,7 @@ Das Plugin liefert **Abfuhrtermine** über die öffentliche Schnittstelle **[[ht
 
 Willst du **Test- oder Zwischenstände** probieren (auf GitHub als **Pre-Release / Beta** gekennzeichnet), geht das mit derselben **ZIP‑Installation** wie bei Stable — nur liegt die Datei unter dem Pre-Release-Eintrag (Asset **loxberry-plugin-abfallio-…-beta….zip**).
 
-**Wichtig zum LoxBerry-Vergleich:** Die Plugin-Verwaltung bewertet Versionen wie üblich nach **SemVer**. Steht bei dir **Stable** %%1.4.1%% installiert, gilt eine **Beta** wie %%1.4.1-beta.2%% formal als **„ältere“ Version** %%1.4.1%% — dann wird **„Pre- und Releases“** allein **kein** automatisches Upgrade von Stable auf diese Beta anbieten. Das ist erwartetes Verhalten, kein Konfigurationsfehler.
+**Wichtig zum LoxBerry-Vergleich:** Die Plugin-Verwaltung bewertet Versionen nach **SemVer**. **Vorschau-Betas** (z. B. %%1.5.0-beta.1%% bei Stable %%1.4.2%%) sind **neuer** als die installierte Stable-Version — mit **„Pre- und Releases“** kann LoxBerry sie anbieten. **Gleichbleibende Zeile** (%%1.4.2-beta.3%% bei Stable %%1.4.2%%) gilt dagegen als **älter** als %%1.4.2%%; dann hilft **„Pre- und Releases“** allein nicht — einmal die Beta-ZIP installieren, danach folgen %%…-beta.N+1%% über Autoupdate.
 
 **So probierst du Beta sinnvoll aus**
 
