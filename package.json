@@ -76,7 +76,7 @@
     "loxberry-client-library": "^1.2.0",
     "mocha": "^11.7.6",
     "semantic-release": "^25.0.3",
-    "sharp": "^0.34.5",
+    "sharp": "^0.35.1",
     "tsx": "^4.22.3",
     "typescript": "^6.0.3"
   },
